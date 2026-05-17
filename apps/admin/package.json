@@ -1,0 +1,23 @@
+{
+  "name": "@calm-stories/admin",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@calm-stories/shared": "*",
+    "lucide-react": "^1.14.0",
+    "next": "^15.3.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "sonner": "^2.0.7"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@calm-stories/api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@calm-stories/db": "*",
+    "@calm-stories/shared": "*",
+    "@supabase/supabase-js": "^2.42.0",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "next": "^14.2.0",
+    "pg": "^8.12.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.6",
+    "@types/react": "^18.2.0",
+    "typescript": "^5.3.3"
+  }
+}

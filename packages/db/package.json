@@ -1,0 +1,21 @@
+{
+  "name": "@calm-stories/db",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pg": "^8.12.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.6",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

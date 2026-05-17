@@ -1,0 +1,174 @@
+{
+  "common": {
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "back": "Back",
+    "loading": "Loading..."
+  },
+
+  "splash": {
+    "title": "Little World",
+    "subtitle": "Calm stories, one page at a time"
+  },
+
+  "ageGate": {
+    "headerTitle": "Welcome",
+    "heading": "Who is using this device?",
+    "desc": "We ask once to keep things safe. Your answer is saved on the device only.",
+    "childTitle": "A child under 13",
+    "childSub": "Stories made for little ones",
+    "adultTitle": "13 or older",
+    "adultSub": "A parent or guardian setting up"
+  },
+
+  "privacy": {
+    "headerTitle": "Privacy & Safety",
+    "heading": "What we promise",
+    "desc": "Built for kids. Reviewed against COPPA. Nothing leaves the device unless a grown-up signs in.",
+    "noAds": "No ads, ever",
+    "noTracking": "No tracking or analytics",
+    "noDataSharing": "No data sharing",
+    "noExternalLinks": "No external links",
+    "cachedOnDevice": "Stories cached on device",
+    "readPolicy": "Read the Privacy Policy",
+    "readTerms": "Read the Terms of Service",
+    "agreeBtn": "I understand & agree"
+  },
+
+  "policy": {
+    "headerTitle": "Privacy Policy",
+    "lastUpdated": "Last updated: Mar 2026",
+    "noTrackingTitle": "No tracking",
+    "noTrackingBody": "We do not collect, sell, or share personal information. Your child's usage stays on this device.",
+    "noAdsTitle": "No ads",
+    "noAdsBody": "Little World is fully ad-free and will never show third-party advertising.",
+    "parentalTitle": "Parental controls",
+    "parentalBody": "Subscriptions require a verified grown-up email. Parents can cancel any time from their app store.",
+    "contactTitle": "Contact",
+    "contactBody": "Questions? Reach the team at hello@littleworld.app \u2014 we reply within two working days.",
+    "understandBtn": "I understand"
+  },
+
+  "storyList": {
+    "todayLabel": "Today",
+    "heading": "Stories for you",
+    "continueLabel": "Continue \u00b7 Page {{current}} of {{total}}",
+    "minRead": "{{min}} min",
+    "pages": "{{count}} pages",
+    "storyCount": "{{count}} story",
+    "storyCountPlural": "{{count}} stories",
+    "premium": "Premium",
+    "emptyText": "No stories yet. Check back soon!"
+  },
+
+  "storyPlayer": {
+    "pagePill": "Page {{current}} of {{total}}",
+    "readAloud": "Read aloud",
+    "previous": "Previous",
+    "next": "Next"
+  },
+
+  "paywall": {
+    "headerTitle": "Premium",
+    "heroTitle": "Unlock the rest",
+    "heroSub": "20+ stories \u00b7 audio narration \u00b7 new each week",
+    "benefitStoriesLabel": "More stories",
+    "benefitStoriesDesc": "20+ premium stories with new ones every week",
+    "benefitAudioLabel": "Audio narration",
+    "benefitAudioDesc": "Calm, slow voice for every page",
+    "benefitThemesLabel": "New themes",
+    "benefitThemesDesc": "More gentle color sets to choose from",
+    "pricingThen": "Then",
+    "pricingAmount": "${{price}} / month",
+    "pricingNote": "First week free \u00b7 cancel any time",
+    "startTrial": "Start free week",
+    "maybeLater": "Maybe later"
+  },
+
+  "parentGate": {
+    "headerTitle": "Grown-up check",
+    "heading": "A grown-up needs to confirm",
+    "desc": "We'll email a link to verify. The subscription only starts once they tap it.",
+    "label": "Parent email",
+    "placeholder": "parent@example.com",
+    "hint": "We never share or sell email addresses.",
+    "successText": "Link sent. Check your inbox.",
+    "sendBtn": "Send verification link"
+  },
+
+  "settings": {
+    "heading": "Settings",
+    "theme": "Theme",
+    "language": "Language",
+    "sound": "Sound",
+    "audioNarration": "Audio narration",
+    "audioNarrationSub": "Read stories out loud",
+    "reading": "Reading",
+    "textSize": "Text size",
+    "animations": "Animations",
+    "about": "About",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "contactSupport": "Contact support",
+    "version": "Little World \u00b7 v1.0.0 (build 1)",
+    "adminPanel": "Admin Panel",
+    "parentArea": "Parent area"
+  },
+
+  "language": {
+    "albanian": "Shqip",
+    "english": "English"
+  },
+
+  "textSizeOptions": {
+    "s": "S",
+    "m": "M",
+    "l": "L"
+  },
+
+  "animationOptions": {
+    "slow": "Slow",
+    "normal": "Normal",
+    "off": "Off"
+  },
+
+  "grownupGate": {
+    "headerTitle": "Grown-up check",
+    "subtitle": "This area is for parents.",
+    "heading": "Tap the answer",
+    "footerNote": "We ask a small question so children don't open the parent area by mistake."
+  },
+
+  "parentDashboard": {
+    "headerTitle": "Parent area",
+    "hello": "Hello, grown-up",
+    "subHello": "Here's how this week is going.",
+    "lockedDesc": "Insights help you see how reading time is going. Available with Premium.",
+    "lockedTitle": "Insights are a Premium feature",
+    "readingTime": "Reading time",
+    "minThisWeek": "min this week",
+    "thisWeek": "This week",
+    "dayStreak": "Day streak",
+    "daysInRow": "days in a row",
+    "storiesRead": "Stories read",
+    "calmTime": "Calm time",
+    "minutes": "minutes",
+    "favoriteStory": "Favorite story",
+    "opened": "Opened {{count}} times",
+    "finished": "finished {{count}}",
+    "account": "Account",
+    "subscription": "Subscription",
+    "manageAppStore": "Manage in App Store",
+    "restorePurchases": "Restore purchases",
+    "contactSupport": "Contact support",
+    "seePremium": "See Premium",
+    "backToSettings": "Back to settings",
+    "done": "Done",
+    "privacyNote": "All reading data stays on this device. We never share it."
+  },
+
+  "tabs": {
+    "stories": "Stories",
+    "settings": "Settings"
+  }
+}

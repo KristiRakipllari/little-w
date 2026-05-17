@@ -1,0 +1,39 @@
+{
+  "name": "calm-stories",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Calm storytelling app for children with autism",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace @calm-stories/api run dev",
+    "dev:mobile": "npm --workspace @calm-stories/mobile run start",
+    "dev:admin": "npm --workspace @calm-stories/admin run dev",
+    "build:api": "npm --workspace @calm-stories/api run build",
+    "build:shared": "npm --workspace @calm-stories/shared run build",
+    "db:migrate": "npm --workspace @calm-stories/db run migrate",
+    "db:seed": "npm --workspace @calm-stories/db run seed",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:reset": "docker-compose down -v && docker-compose up -d",
+    "setup": "npm install && npm run docker:up && sleep 3 && npm run db:migrate && npm run db:seed",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:mobile\"",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "react-native-worklets": "^0.8.3"
+  }
+}

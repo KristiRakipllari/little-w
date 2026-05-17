@@ -1,0 +1,174 @@
+{
+  "common": {
+    "continue": "Vazhdo",
+    "cancel": "Anulo",
+    "back": "Kthehu",
+    "loading": "Po ngarkohet..."
+  },
+
+  "splash": {
+    "title": "Little World",
+    "subtitle": "Tregime t\u00eb qeta, nj\u00eb faqe n\u00eb nj\u00eb koh\u00eb"
+  },
+
+  "ageGate": {
+    "headerTitle": "Mir\u00eb se vjen",
+    "heading": "Kush e p\u00ebrdor k\u00ebt\u00eb pajisje?",
+    "desc": "Pyesim nj\u00eb her\u00eb p\u00ebr t\u00eb mbajtur gjithshka t\u00eb sigurt. P\u00ebrgjigja ruhet vet\u00ebm n\u00eb pajisje.",
+    "childTitle": "Nj\u00eb f\u00ebmij\u00eb n\u00ebn 13 vje\u00e7",
+    "childSub": "Tregime t\u00eb b\u00ebra p\u00ebr t\u00eb vegj\u00eblit",
+    "adultTitle": "13 vje\u00e7 ose m\u00eb i madh",
+    "adultSub": "Nj\u00eb prind ose kujdestar q\u00eb konfigurohet"
+  },
+
+  "privacy": {
+    "headerTitle": "Privat\u00ebsia & Siguria",
+    "heading": "\u00c7far\u00eb premtojm\u00eb",
+    "desc": "Nd\u00ebrtuar p\u00ebr f\u00ebmij\u00ebt. Rishikuar ndaj COPPA. Asgj\u00eb nuk del nga pajisja p\u00ebrve\u00e7 n\u00ebse nj\u00eb i rritur identifikohet.",
+    "noAds": "Pa reklama, asnj\u00ebher\u00eb",
+    "noTracking": "Pa ndjekje ose analitik\u00eb",
+    "noDataSharing": "Pa ndarje t\u00eb dh\u00ebnash",
+    "noExternalLinks": "Pa lidhje t\u00eb jashtme",
+    "cachedOnDevice": "Tregimet ruhen n\u00eb pajisje",
+    "readPolicy": "Lexo Politik\u00ebn e Privat\u00ebsis\u00eb",
+    "readTerms": "Lexo Kushtet e Sh\u00ebrbimit",
+    "agreeBtn": "Kuptoj & pranoj"
+  },
+
+  "policy": {
+    "headerTitle": "Politika e Privat\u00ebsis\u00eb",
+    "lastUpdated": "P\u00ebrdituar s\u00eb fundi: Mars 2026",
+    "noTrackingTitle": "Pa ndjekje",
+    "noTrackingBody": "Ne nuk mbledhim, shesim ose ndajm\u00eb informacione personale. P\u00ebrdorimi i f\u00ebmij\u00ebs tuaj mbetet n\u00eb k\u00ebt\u00eb pajisje.",
+    "noAdsTitle": "Pa reklama",
+    "noAdsBody": "Little World \u00ebsht\u00eb plot\u00ebsisht pa reklama dhe nuk do t\u00eb shfaq\u00eb kurr\u00eb reklama t\u00eb pal\u00ebve t\u00eb treta.",
+    "parentalTitle": "Kontrollet prind\u00ebrore",
+    "parentalBody": "Abonimet k\u00ebrkojn\u00eb nj\u00eb email t\u00eb verifikuar t\u00eb nj\u00eb t\u00eb rrituri. Prind\u00ebrit mund t\u00eb anulojn\u00eb n\u00eb \u00e7do koh\u00eb nga dyqani i tyre i aplikacioneve.",
+    "contactTitle": "Kontakti",
+    "contactBody": "Pyetje? Kontaktoni ekipin n\u00eb hello@littleworld.app \u2014 p\u00ebrgjigjemi brenda dy dit\u00ebve t\u00eb pun\u00ebs.",
+    "understandBtn": "E kuptoj"
+  },
+
+  "storyList": {
+    "todayLabel": "Sot",
+    "heading": "Tregime p\u00ebr ty",
+    "continueLabel": "Vazhdo \u00b7 Faqja {{current}} nga {{total}}",
+    "minRead": "{{min}} min",
+    "pages": "{{count}} faqe",
+    "storyCount": "{{count}} tregim",
+    "storyCountPlural": "{{count}} tregime",
+    "premium": "Premium",
+    "emptyText": "Asnj\u00eb tregim ende. Kthehuni s\u00eb shpejti!"
+  },
+
+  "storyPlayer": {
+    "pagePill": "Faqja {{current}} nga {{total}}",
+    "readAloud": "Lexo me z\u00eb",
+    "previous": "Para",
+    "next": "Tjetra"
+  },
+
+  "paywall": {
+    "headerTitle": "Premium",
+    "heroTitle": "Hap pjes\u00ebn tjet\u00ebr",
+    "heroSub": "20+ tregime \u00b7 narrim audio \u00b7 t\u00eb reja \u00e7do jav\u00eb",
+    "benefitStoriesLabel": "M\u00eb shum\u00eb tregime",
+    "benefitStoriesDesc": "20+ tregime premium me t\u00eb reja \u00e7do jav\u00eb",
+    "benefitAudioLabel": "Narrim audio",
+    "benefitAudioDesc": "Z\u00eb i qet\u00eb, i ngadalt\u00eb p\u00ebr \u00e7do faqe",
+    "benefitThemesLabel": "Tema t\u00eb reja",
+    "benefitThemesDesc": "M\u00eb shum\u00eb grupe ngjyrash t\u00eb buta",
+    "pricingThen": "Past\u00ebr",
+    "pricingAmount": "${{price}} / muaj",
+    "pricingNote": "Java e par\u00eb falas \u00b7 anuloni n\u00eb \u00e7do koh\u00eb",
+    "startTrial": "Filloni jav\u00ebn falas",
+    "maybeLater": "Ndoshta m\u00eb von\u00eb"
+  },
+
+  "parentGate": {
+    "headerTitle": "Kontrolli i t\u00eb rriturit",
+    "heading": "Nj\u00eb i rritur duhet t\u00eb konfirmoj\u00eb",
+    "desc": "Do t\u2019ju d\u00ebrgojm\u00eb nj\u00eb lidhje p\u00ebr verifikim. Abonimi fillon vet\u00ebm pasi ta shtypni.",
+    "label": "Email-i i prindit",
+    "placeholder": "prindi@shembull.com",
+    "hint": "Ne nuk ndajm\u00eb ose shesim adresa email-i.",
+    "successText": "Lidhja u d\u00ebrgua. Kontrolloni inbox-in.",
+    "sendBtn": "D\u00ebrgo lidhjen e verifikimit"
+  },
+
+  "settings": {
+    "heading": "Cil\u00ebsime",
+    "theme": "Tema",
+    "language": "Gjuha",
+    "sound": "Z\u00ebri",
+    "audioNarration": "Narrim audio",
+    "audioNarrationSub": "Lexo tregimet me z\u00eb",
+    "reading": "Leximi",
+    "textSize": "Madh\u00ebsia e tekstit",
+    "animations": "Animacionet",
+    "about": "Rreth",
+    "privacyPolicy": "Politika e Privat\u00ebsis\u00eb",
+    "termsOfService": "Kushtet e Sh\u00ebrbimit",
+    "contactSupport": "Kontakto mb\u00ebshtetjen",
+    "version": "Little World \u00b7 v1.0.0 (build 1)",
+    "adminPanel": "Paneli i Administratorit",
+    "parentArea": "Zona e prindit"
+  },
+
+  "language": {
+    "albanian": "Shqip",
+    "english": "English"
+  },
+
+  "textSizeOptions": {
+    "s": "S",
+    "m": "M",
+    "l": "L"
+  },
+
+  "animationOptions": {
+    "slow": "Ngadal\u00eb",
+    "normal": "Normale",
+    "off": "Fik"
+  },
+
+  "grownupGate": {
+    "headerTitle": "Kontrolli i t\u00eb rriturit",
+    "subtitle": "Kjo zon\u00eb \u00ebsht\u00eb p\u00ebr prind\u00ebrit.",
+    "heading": "Shtyp p\u00ebrgjigjen",
+    "footerNote": "B\u00ebjm\u00eb nj\u00eb pyetje t\u00eb vog\u00ebl q\u00eb f\u00ebmij\u00ebt t\u00eb mos hapin zon\u00ebn e prind\u00ebrve gabimisht."
+  },
+
+  "parentDashboard": {
+    "headerTitle": "Zona e prindit",
+    "hello": "P\u00ebrsh\u00ebndetje, i rritur",
+    "subHello": "Ja si po shkon kjo jav\u00eb.",
+    "lockedDesc": "Statistikat ju ndihmojn\u00eb t\u00eb shihni si po shkon koha e leximit. E disponueshme me Premium.",
+    "lockedTitle": "Statistikat jan\u00eb funksion Premium",
+    "readingTime": "Koha e leximit",
+    "minThisWeek": "min k\u00ebt\u00eb jav\u00eb",
+    "thisWeek": "K\u00ebto jav\u00eb",
+    "dayStreak": "Dit\u00eb rresht",
+    "daysInRow": "dit\u00eb rresht",
+    "storiesRead": "Tregime t\u00eb lexuara",
+    "calmTime": "Koha e qet\u00eb",
+    "minutes": "minuta",
+    "favoriteStory": "Tregimi i preferuar",
+    "opened": "Hapur {{count}} her\u00eb",
+    "finished": "p\u00ebrfunduar {{count}}",
+    "account": "Llogaria",
+    "subscription": "Abonimi",
+    "manageAppStore": "Menaxho n\u00eb App Store",
+    "restorePurchases": "Rikthe blerjet",
+    "contactSupport": "Kontakto mb\u00ebshtetjen",
+    "seePremium": "Shiko Premium",
+    "backToSettings": "Kthehu te cil\u00ebsimet",
+    "done": "Mbaro",
+    "privacyNote": "T\u00eb gjitha t\u00eb dh\u00ebnat e leximit qendrojn\u00eb n\u00eb k\u00ebt\u00eb pajisje. Ne nuk i ndajm\u00eb kurr\u00eb."
+  },
+
+  "tabs": {
+    "stories": "Tregime",
+    "settings": "Cil\u00ebsime"
+  }
+}

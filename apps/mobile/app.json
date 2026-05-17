@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Calm Stories",
+    "slug": "calm-stories",
+    "version": "1.0.0",
+    "orientation": "portrait",
+
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#F7F5EF",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.calmstories.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F5EF"
+      },
+      "package": "com.calmstories.app"
+    },
+    "plugins": []
+  }
+}
