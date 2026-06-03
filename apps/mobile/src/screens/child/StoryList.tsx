@@ -10,6 +10,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Rect, Path } from "react-native-svg";
 import Card from "@/components/Card";
 import { useAppStore } from "@/store/appStore";
+import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/i18n";
 import { useStoryStore } from "@/store/storyStore";
 import {
@@ -42,6 +43,7 @@ export default function StoryList({ onStory, onPaywall }: Props) {
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
   const { stories, isLoading, fetchStories } = useStoryStore();
+  const { user, isSubscribed } = useAuthStore();
 
   useEffect(() => {
     fetchStories();
@@ -66,10 +68,13 @@ export default function StoryList({ onStory, onPaywall }: Props) {
   }, [stories]);
 
   const handlePress = (s: Story) => {
-    if (s.is_premium) {
-      onPaywall(s.id);
-    } else {
+    if (!s.is_premium) {
       onStory(s.id);
+    } else if (user && isSubscribed) {
+      onStory(s.id);
+    } else {
+      // Not logged in OR logged in but not subscribed → Paywall
+      onPaywall(s.id);
     }
   };
 

@@ -10,3 +10,4 @@ android/
 .turbo/
 .DS_Store
 Thumbs.db
+*.tsbuildinfo

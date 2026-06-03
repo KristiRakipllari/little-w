@@ -5,18 +5,21 @@ import ScreenHeader from "@/components/ScreenHeader";
 import Btn from "@/components/Btn";
 import Card from "@/components/Card";
 import { useAppStore } from "@/store/appStore";
+import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/i18n";
 import { getThemeById, SUBSCRIPTION_PRICE } from "@calm-stories/shared";
 
 interface Props {
   onStartTrial: () => void;
+  onLogin: () => void;
   onClose: () => void;
 }
 
-export default function PaywallScreen({ onStartTrial, onClose }: Props) {
+export default function PaywallScreen({ onStartTrial, onLogin, onClose }: Props) {
   const themeId = useAppStore((s) => s.themeId);
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
+  const { user } = useAuthStore();
 
   const BENEFITS = [
     { icon: "\uD83D\uDCDA", label: t("paywall.benefitStoriesLabel"), desc: t("paywall.benefitStoriesDesc") },
@@ -88,9 +91,15 @@ export default function PaywallScreen({ onStartTrial, onClose }: Props) {
 
         <View style={styles.spacer} />
 
-        <Btn t={theme} onPress={onStartTrial}>
-          {t("paywall.startTrial")}
-        </Btn>
+        {user ? (
+          <Btn t={theme} onPress={onStartTrial}>
+            {t("paywall.startTrial")}
+          </Btn>
+        ) : (
+          <Btn t={theme} onPress={onLogin}>
+            {t("paywall.loginToContinue")}
+          </Btn>
+        )}
         <View style={styles.gap} />
         <Btn t={theme} variant="ghost" onPress={onClose}>
           {t("paywall.maybeLater")}

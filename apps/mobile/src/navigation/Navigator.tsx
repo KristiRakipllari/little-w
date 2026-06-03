@@ -7,11 +7,13 @@ import Svg, { Path, Circle } from "react-native-svg";
 import { TouchableOpacity, Text } from "react-native";
 
 import { useAppStore } from "@/store/appStore";
+import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/i18n";
 import { getThemeById } from "@calm-stories/shared";
 
 // Screens
 import SplashScreen from "@/screens/child/SplashScreen";
+import LanguageScreen from "@/screens/child/LanguageScreen";
 import AgeGateScreen from "@/screens/child/AgeGateScreen";
 import PrivacyScreen from "@/screens/child/PrivacyScreen";
 import PolicyScreen from "@/screens/child/PolicyScreen";
@@ -23,12 +25,14 @@ import SettingsScreen from "@/screens/child/SettingsScreen";
 import GrownupGateScreen from "@/screens/child/GrownupGateScreen";
 import ParentDashboardScreen from "@/screens/child/ParentDashboardScreen";
 
-// Admin screens (unchanged)
+// Auth screens
 import Login from "@/screens/auth/Login";
+import ForgotPassword from "@/screens/auth/ForgotPassword";
+
+// Admin screens
 import Dashboard from "@/screens/admin/Dashboard";
 import StoryForm from "@/screens/admin/StoryForm";
 import PageEditor from "@/screens/admin/PageEditor";
-import { useAuthStore } from "@/store/authStore";
 
 // ── Types ────────────────────────────────────
 export type RootStackParamList = {
@@ -42,6 +46,9 @@ export type RootStackParamList = {
   GrownupGate: undefined;
   ParentDashboard: undefined;
   Policy: undefined;
+  // Auth
+  LoginRegister: { storyId?: string };
+  ForgotPassword: undefined;
   // Admin
   Login: undefined;
   AdminTabs: undefined;
@@ -150,6 +157,10 @@ function ChildMainScreen({ navigation }: any) {
     [navigation]
   );
 
+  const handleSettingsLogin = useCallback(() => {
+    navigation.navigate("LoginRegister", {});
+  }, [navigation]);
+
   const handlePolicy = useCallback(() => {
     navigation.navigate("Policy");
   }, [navigation]);
@@ -168,7 +179,12 @@ function ChildMainScreen({ navigation }: any) {
         {activeTab === "home" ? (
           <StoryList onStory={handleStory} onPaywall={handlePaywall} />
         ) : (
-          <SettingsScreen onPolicy={handlePolicy} onAdmin={handleAdmin} onParentArea={handleParentArea} />
+          <SettingsScreen
+            onPolicy={handlePolicy}
+            onAdmin={handleAdmin}
+            onParentArea={handleParentArea}
+            onLogin={handleSettingsLogin}
+          />
         )}
       </View>
       <TabBar active={activeTab} onNavigate={setActiveTab} />
@@ -178,7 +194,7 @@ function ChildMainScreen({ navigation }: any) {
 
 // ── Onboarding Flow ──────────────────────────
 function OnboardingScreen({ navigation }: any) {
-  const [step, setStep] = useState<"splash" | "age" | "privacy">("splash");
+  const [step, setStep] = useState<"splash" | "language" | "age" | "privacy">("splash");
   const { setAgreed } = useAppStore();
 
   const goPolicy = useCallback(() => {
@@ -187,7 +203,9 @@ function OnboardingScreen({ navigation }: any) {
 
   switch (step) {
     case "splash":
-      return <SplashScreen onFinish={() => setStep("age")} />;
+      return <SplashScreen onFinish={() => setStep("language")} />;
+    case "language":
+      return <LanguageScreen onContinue={() => setStep("age")} />;
     case "age":
       return <AgeGateScreen onContinue={() => setStep("privacy")} />;
     case "privacy":
@@ -197,7 +215,6 @@ function OnboardingScreen({ navigation }: any) {
           onPolicy={goPolicy}
           onAgree={() => {
             setAgreed(true);
-            // React Navigation's conditional rendering handles the screen swap automatically
           }}
         />
       );
@@ -270,8 +287,18 @@ export default function Navigator() {
                 options={{ presentation: "card" }}
               />
               <Stack.Screen
+                name="LoginRegister"
+                component={LoginRegisterWrapper}
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen
+                name="ForgotPassword"
+                component={ForgotPasswordWrapper}
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen
                 name="Login"
-                component={Login}
+                component={AdminLoginWrapper}
                 options={{ headerShown: true, title: "Admin Login" }}
               />
             </>
@@ -282,7 +309,7 @@ export default function Navigator() {
   );
 }
 
-// ── Wrapper components (bridge navigation params → screen props) ──
+// ── Wrapper components ──────────────────────
 
 function StoryPlayerWrapper({ route, navigation }: any) {
   return (
@@ -294,9 +321,11 @@ function StoryPlayerWrapper({ route, navigation }: any) {
 }
 
 function PaywallWrapper({ route, navigation }: any) {
+  const storyId = route.params?.storyId;
   return (
     <PaywallScreen
       onStartTrial={() => navigation.navigate("ParentGate")}
+      onLogin={() => navigation.navigate("LoginRegister", { storyId })}
       onClose={() => navigation.goBack()}
     />
   );
@@ -322,11 +351,55 @@ function GrownupGateWrapper({ navigation }: any) {
 }
 
 function ParentDashboardWrapper({ navigation }: any) {
+  const { isSubscribed } = useAuthStore();
   return (
     <ParentDashboardScreen
+      subscribed={isSubscribed}
       onBack={() => navigation.goBack()}
       onClose={() => navigation.navigate("ChildMain")}
       onPaywall={() => navigation.navigate("Paywall", { storyId: "" })}
+    />
+  );
+}
+
+function LoginRegisterWrapper({ route, navigation }: any) {
+  const storyId = route.params?.storyId;
+
+  return (
+    <Login
+      onBack={() => navigation.goBack()}
+      onSuccess={() => {
+        if (storyId) {
+          // Coming from a premium story tap
+          const { isSubscribed } = useAuthStore.getState();
+          if (isSubscribed) {
+            navigation.replace("StoryPlayer", { storyId });
+          } else {
+            navigation.replace("Paywall", { storyId });
+          }
+        } else {
+          // Coming from Settings login — go back to Settings
+          navigation.goBack();
+        }
+      }}
+      onForgotPassword={() => navigation.navigate("ForgotPassword")}
+    />
+  );
+}
+
+function ForgotPasswordWrapper({ navigation }: any) {
+  return <ForgotPassword onBack={() => navigation.goBack()} />;
+}
+
+function AdminLoginWrapper({ navigation }: any) {
+  const { setMode } = useAuthStore();
+  return (
+    <Login
+      onBack={() => navigation.goBack()}
+      onSuccess={() => {
+        setMode("admin");
+      }}
+      onForgotPassword={() => navigation.navigate("ForgotPassword")}
     />
   );
 }

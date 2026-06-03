@@ -55,6 +55,14 @@ export async function login(body: LoginRequest): Promise<AuthTokens> {
   return res.data!;
 }
 
+export async function register(body: LoginRequest): Promise<AuthTokens> {
+  const res = await request<AuthTokens>(API_ENDPOINTS.AUTH.REGISTER, {
+    method: "POST",
+    body: JSON.stringify({ ...body, name: body.email.split("@")[0] }),
+  });
+  return res.data!;
+}
+
 // ─── Stories ─────────────────────────────────
 
 export async function getStories(level?: string): Promise<Story[]> {
@@ -146,16 +154,21 @@ export async function reorderPages(
 export async function uploadFile(
   uri: string,
   filename: string,
-  type: string
+  mimeType: string,
+  storyId: string,
+  type: string = "page"
 ): Promise<string> {
   const token = await AsyncStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
 
+  // Convert file URI to a Blob with the correct MIME type
+  const fileResponse = await fetch(uri);
+  const rawBlob = await fileResponse.blob();
+  const file = new File([rawBlob], filename, { type: mimeType });
+
   const formData = new FormData();
-  formData.append("file", {
-    uri,
-    name: filename,
-    type,
-  } as any);
+  formData.append("file", file);
+  formData.append("storyId", storyId);
+  formData.append("type", type);
 
   const res = await fetch(`${CONFIG.API_URL}${API_ENDPOINTS.UPLOAD}`, {
     method: "POST",
@@ -166,6 +179,22 @@ export async function uploadFile(
   });
 
   const data = await res.json();
-  if (!data.success) throw new Error(data.error);
+  if (!data.success) throw new Error(data.error || "Upload failed");
   return data.data.url;
+}
+
+export async function deleteUploadedFile(fileUrl: string): Promise<void> {
+  const token = await AsyncStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+
+  const res = await fetch(`${CONFIG.API_URL}${API_ENDPOINTS.UPLOAD}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ path: fileUrl }),
+  });
+
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || "Delete failed");
 }

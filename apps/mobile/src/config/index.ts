@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 // Physical devices use LAN IP, web/simulators use localhost
 // Update this IP to match your computer's local network address (ipconfig)
 const LOCAL_API =
-  Platform.OS === "web" ? "http://localhost:3000" : "http://192.168.0.5:3000";
+  Platform.OS === "web" ? "http://localhost:3000" : "http://192.168.1.42:3000";
 
 
 export const CONFIG = {

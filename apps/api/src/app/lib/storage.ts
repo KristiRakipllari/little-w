@@ -1,34 +1,40 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabase, BUCKET } from "@/lib/supabase";
 
-const supabaseUrl = process.env.SUPABASE_URL || "";
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || "";
-const bucket = process.env.SUPABASE_BUCKET || "story-assets";
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
+/**
+ * Upload a file to Supabase Storage with a structured path.
+ * Path format: stories/{storyId}/{type}_{timestamp}.{ext}
+ */
 export async function uploadFile(
   file: Buffer,
-  fileName: string,
-  contentType: string
+  originalName: string,
+  contentType: string,
+  storyId: string,
+  type: string = "page"
 ): Promise<string> {
-  const path = `uploads/${Date.now()}_${fileName}`;
+  const ext = originalName.split(".").pop() || "bin";
+  const path = `stories/${storyId}/${type}_${Date.now()}.${ext}`;
 
   const { error } = await supabase.storage
-    .from(bucket)
+    .from(BUCKET)
     .upload(path, file, { contentType, upsert: false });
 
   if (error) throw new Error(`Upload failed: ${error.message}`);
 
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   return data.publicUrl;
 }
 
+/**
+ * Delete a file from Supabase Storage by its full public URL.
+ */
 export async function deleteFile(fileUrl: string): Promise<void> {
-  // Extract path from full URL
   const url = new URL(fileUrl);
-  const pathParts = url.pathname.split(`/storage/v1/object/public/${bucket}/`);
-  if (pathParts.length < 2) return;
+  const pathParts = url.pathname.split(`/storage/v1/object/public/${BUCKET}/`);
+  if (pathParts.length < 2) {
+    throw new Error("Invalid file URL — could not extract storage path");
+  }
 
   const filePath = pathParts[1];
-  await supabase.storage.from(bucket).remove([filePath]);
+  const { error } = await supabase.storage.from(BUCKET).remove([filePath]);
+  if (error) throw new Error(`Delete failed: ${error.message}`);
 }

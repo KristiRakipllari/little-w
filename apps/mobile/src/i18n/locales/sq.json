@@ -82,6 +82,7 @@
     "pricingAmount": "${{price}} / muaj",
     "pricingNote": "Java e par\u00eb falas \u00b7 anuloni n\u00eb \u00e7do koh\u00eb",
     "startTrial": "Filloni jav\u00ebn falas",
+    "loginToContinue": "Identifikohu p\u00ebr t\u00eb vazhduar",
     "maybeLater": "Ndoshta m\u00eb von\u00eb"
   },
 
@@ -112,7 +113,11 @@
     "contactSupport": "Kontakto mb\u00ebshtetjen",
     "version": "Little World \u00b7 v1.0.0 (build 1)",
     "adminPanel": "Paneli i Administratorit",
-    "parentArea": "Zona e prindit"
+    "parentArea": "Zona e prindit",
+    "account": "Llogaria",
+    "logIn": "Identifikohu",
+    "logOut": "Dil",
+    "loggedInAs": "Identifikuar si"
   },
 
   "language": {
@@ -165,6 +170,29 @@
     "backToSettings": "Kthehu te cil\u00ebsimet",
     "done": "Mbaro",
     "privacyNote": "T\u00eb gjitha t\u00eb dh\u00ebnat e leximit qendrojn\u00eb n\u00eb k\u00ebt\u00eb pajisje. Ne nuk i ndajm\u00eb kurr\u00eb."
+  },
+
+  "auth": {
+    "headerTitle": "Identifikimi i Prindit",
+    "heading": "Mir\u00eb se vjen, i rritur",
+    "subheading": "Identifikohu p\u00ebr t\u00eb menaxhuar p\u00ebrvojn\u00eb e leximit t\u00eb f\u00ebmij\u00ebs dhe p\u00ebr t\u00eb hapur tregimet premium.",
+    "tabLogin": "Identifikohu",
+    "tabRegister": "Regjistrohu",
+    "emailLabel": "Email",
+    "emailPlaceholder": "prindi@shembull.com",
+    "passwordLabel": "Fjal\u00ebkalimi",
+    "passwordPlaceholder": "Fjal\u00ebkalimi juaj",
+    "forgotPassword": "Harruat fjal\u00ebkalimin?",
+    "loginBtn": "Identifikohu",
+    "registerBtn": "Krijo Llogarinë",
+    "footerNote": "Ne e p\u00ebrdorim emailin tuaj vet\u00ebm p\u00ebr menaxhimin e abonimit. Asnj\u00eb spam, kurr\u00eb.",
+    "forgotTitle": "Rivendos Fjal\u00ebkalimin",
+    "forgotHeading": "Harruat fjal\u00ebkalimin?",
+    "forgotDesc": "Shkruani emailin tuaj dhe do t\u2019ju d\u00ebrgojm\u00eb nj\u00eb lidhje p\u00ebr ta rivendosur.",
+    "forgotSendBtn": "D\u00ebrgo lidhjen e rivendosjes",
+    "forgotSentTitle": "Kontrolloni inbox-in",
+    "forgotSentDesc": "N\u00ebse ekziston nj\u00eb llogari me at\u00eb email, kemi d\u00ebrguar nj\u00eb lidhje rivendosjeje. Mund t\u00eb duhen disa minuta.",
+    "backToLogin": "Kthehu te identifikimi"
   },
 
   "tabs": {

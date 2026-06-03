@@ -1,25 +1,114 @@
-import React from "react";
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import Card from "@/components/Card";
 import Toggle from "@/components/Toggle";
 import Segment from "@/components/Segment";
 import { useAppStore, Locale } from "@/store/appStore";
+import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/i18n";
 import { THEMES, getThemeById } from "@calm-stories/shared";
+import type { AppTheme } from "@calm-stories/shared";
 
 const LANGUAGES: { id: Locale; label: string; flag: string }[] = [
   { id: "sq", label: "Shqip", flag: "\uD83C\uDDE6\uD83C\uDDF1" },
   { id: "en", label: "English", flag: "\uD83C\uDDEC\uD83C\uDDE7" },
 ];
 
+function LanguageDropdown({
+  locale,
+  setLocale,
+  theme,
+}: {
+  locale: Locale;
+  setLocale: (l: Locale) => void;
+  theme: AppTheme;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = LANGUAGES.find((l) => l.id === locale) || LANGUAGES[0];
+
+  return (
+    <>
+      <TouchableOpacity
+        onPress={() => setOpen(true)}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        style={styles.dropdownTrigger}
+      >
+        <Text style={styles.dropdownFlag}>{current.flag}</Text>
+        <Text style={[styles.dropdownLabel, { color: theme.textDark }]}>
+          {current.label}
+        </Text>
+        <Svg width={14} height={14} viewBox="0 0 14 14">
+          <Path
+            d="M3 5l4 4 4-4"
+            stroke={theme.textLight}
+            strokeWidth={2}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </Svg>
+      </TouchableOpacity>
+
+      <Modal visible={open} transparent animationType="fade">
+        <TouchableOpacity
+          style={styles.dropdownOverlay}
+          activeOpacity={1}
+          onPress={() => setOpen(false)}
+        >
+          <View style={[styles.dropdownMenu, { backgroundColor: theme.surface }]}>
+            {LANGUAGES.map((lang, i) => {
+              const selected = locale === lang.id;
+              return (
+                <TouchableOpacity
+                  key={lang.id}
+                  onPress={() => {
+                    setLocale(lang.id);
+                    setOpen(false);
+                  }}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.dropdownItem,
+                    i < LANGUAGES.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: theme.border,
+                    },
+                  ]}
+                >
+                  <Text style={styles.dropdownFlag}>{lang.flag}</Text>
+                  <Text style={[styles.dropdownLabel, { color: theme.textDark }]}>
+                    {lang.label}
+                  </Text>
+                  {selected && (
+                    <Svg width={16} height={16} viewBox="0 0 16 16">
+                      <Path
+                        d="M3 8l4 4 6-7"
+                        stroke={theme.primary}
+                        strokeWidth={2.5}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+}
+
 interface Props {
   onPolicy: () => void;
   onAdmin: () => void;
   onParentArea: () => void;
+  onLogin: () => void;
 }
 
-export default function SettingsScreen({ onPolicy, onAdmin, onParentArea }: Props) {
+export default function SettingsScreen({ onPolicy, onAdmin, onParentArea, onLogin }: Props) {
   const {
     locale,
     setLocale,
@@ -32,6 +121,7 @@ export default function SettingsScreen({ onPolicy, onAdmin, onParentArea }: Prop
     motion,
     setMotion,
   } = useAppStore();
+  const { user, logout } = useAuthStore();
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
 
@@ -80,58 +170,16 @@ export default function SettingsScreen({ onPolicy, onAdmin, onParentArea }: Prop
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Language picker */}
+        {/* Language dropdown */}
         {section(
           t("settings.language"),
-          LANGUAGES.map((lang, i) => {
-            const selected = locale === lang.id;
-            return (
-              <TouchableOpacity
-                key={lang.id}
-                onPress={() => setLocale(lang.id)}
-                activeOpacity={0.7}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                style={[
-                  styles.langRow,
-                  i < LANGUAGES.length - 1 && {
-                    borderBottomWidth: 1,
-                    borderBottomColor: theme.border,
-                  },
-                ]}
-              >
-                <Text style={styles.langFlag}>{lang.flag}</Text>
-                <Text style={[styles.langLabel, { color: theme.textDark }]}>
-                  {lang.label}
-                </Text>
+          <LanguageDropdown locale={locale} setLocale={setLocale} theme={theme} />
+        )}
 
-                {/* Radio */}
-                <View
-                  style={[
-                    styles.radio,
-                    {
-                      backgroundColor: selected ? theme.primary : "transparent",
-                      borderWidth: selected ? 0 : 2,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                >
-                  {selected && (
-                    <Svg width={12} height={12} viewBox="0 0 12 12">
-                      <Path
-                        d="M2 6l3 3 5-6"
-                        stroke="#fff"
-                        strokeWidth={2.5}
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </Svg>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          })
+        {/* Parent area */}
+        {section(
+          t("settings.parentArea"),
+          settingsLink(t("settings.parentArea"), onParentArea, true)
         )}
 
         {/* Theme picker */}
@@ -267,12 +315,6 @@ export default function SettingsScreen({ onPolicy, onAdmin, onParentArea }: Prop
           </>
         )}
 
-        {/* Parent area */}
-        {section(
-          t("settings.parentArea"),
-          settingsLink(t("settings.parentArea"), onParentArea, true)
-        )}
-
         {/* About */}
         {section(
           t("settings.about"),
@@ -281,6 +323,40 @@ export default function SettingsScreen({ onPolicy, onAdmin, onParentArea }: Prop
             {settingsLink(t("settings.termsOfService"), () => {})}
             {settingsLink(t("settings.contactSupport"), () => {}, true)}
           </>
+        )}
+
+        {/* Account */}
+        {section(
+          t("settings.account"),
+          user ? (
+            <>
+              <View style={styles.settingRow}>
+                <View style={styles.settingLabel}>
+                  <Text style={[styles.settingTitle, { color: theme.textDark }]}>
+                    {t("settings.loggedInAs")}
+                  </Text>
+                  <Text style={[styles.settingSub, { color: theme.textLight }]}>
+                    {user.email}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={logout}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                style={[
+                  styles.linkRow,
+                  { borderTopWidth: 1, borderTopColor: theme.border },
+                ]}
+              >
+                <Text style={[styles.linkText, { color: theme.accent || theme.textDark }]}>
+                  {t("settings.logOut")}
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            settingsLink(t("settings.logIn"), onLogin, true)
+          )
         )}
 
         <Text style={[styles.version, { color: theme.textLight }]}>
@@ -332,16 +408,40 @@ const styles = StyleSheet.create({
   },
   sectionCard: { paddingVertical: 4 },
 
-  // Language picker
-  langRow: {
+  // Language dropdown
+  dropdownTrigger: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  langFlag: { fontSize: 22 },
-  langLabel: { fontSize: 16, fontWeight: "700", flex: 1 },
+  dropdownFlag: { fontSize: 22 },
+  dropdownLabel: { fontSize: 16, fontWeight: "700", flex: 1 },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 32,
+  },
+  dropdownMenu: {
+    width: "100%",
+    borderRadius: 16,
+    paddingVertical: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
 
   // Theme picker
   themeRow: {

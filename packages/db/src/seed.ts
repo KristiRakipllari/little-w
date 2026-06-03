@@ -213,6 +213,23 @@ async function seed() {
 
   console.log("  Admin user created (admin@littleworld.app / admin123)");
 
+  // Create parent accounts (free + premium)
+  const parentFreePassword = hashPassword("parent123");
+  await query(
+    `INSERT INTO users (email, password_hash, name, role)
+     VALUES ($1, $2, $3, $4)`,
+    ["free@littleworld.app", parentFreePassword, "Free Parent", "editor"]
+  );
+  console.log("  Free parent created (free@littleworld.app / parent123)");
+
+  const parentPremiumPassword = hashPassword("parent123");
+  await query(
+    `INSERT INTO users (email, password_hash, name, role)
+     VALUES ($1, $2, $3, $4)`,
+    ["premium@littleworld.app", parentPremiumPassword, "Premium Parent", "editor"]
+  );
+  console.log("  Premium parent created (premium@littleworld.app / parent123)");
+
   // Insert stories and pages
   let freeCount = 0;
   let premiumCount = 0;

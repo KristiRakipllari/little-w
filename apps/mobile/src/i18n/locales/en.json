@@ -82,6 +82,7 @@
     "pricingAmount": "${{price}} / month",
     "pricingNote": "First week free \u00b7 cancel any time",
     "startTrial": "Start free week",
+    "loginToContinue": "Log in to continue",
     "maybeLater": "Maybe later"
   },
 
@@ -112,7 +113,11 @@
     "contactSupport": "Contact support",
     "version": "Little World \u00b7 v1.0.0 (build 1)",
     "adminPanel": "Admin Panel",
-    "parentArea": "Parent area"
+    "parentArea": "Parent area",
+    "account": "Account",
+    "logIn": "Log in",
+    "logOut": "Log out",
+    "loggedInAs": "Logged in as"
   },
 
   "language": {
@@ -165,6 +170,29 @@
     "backToSettings": "Back to settings",
     "done": "Done",
     "privacyNote": "All reading data stays on this device. We never share it."
+  },
+
+  "auth": {
+    "headerTitle": "Parent Sign In",
+    "heading": "Welcome, grown-up",
+    "subheading": "Sign in to manage your child's reading experience and unlock premium stories.",
+    "tabLogin": "Log In",
+    "tabRegister": "Sign Up",
+    "emailLabel": "Email",
+    "emailPlaceholder": "parent@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Your password",
+    "forgotPassword": "Forgot password?",
+    "loginBtn": "Log In",
+    "registerBtn": "Create Account",
+    "footerNote": "We only use your email to manage your subscription. No spam, ever.",
+    "forgotTitle": "Reset Password",
+    "forgotHeading": "Forgot your password?",
+    "forgotDesc": "Enter your email and we'll send you a link to reset it.",
+    "forgotSendBtn": "Send reset link",
+    "forgotSentTitle": "Check your inbox",
+    "forgotSentDesc": "If an account exists with that email, we've sent a reset link. It may take a minute to arrive.",
+    "backToLogin": "Back to log in"
   },
 
   "tabs": {

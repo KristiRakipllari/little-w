@@ -8,9 +8,12 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
 import { useStoryStore } from "@/store/storyStore";
+import { uploadFile } from "@/services/api";
 import { COLORS, SUPPORTED_LOCALES, LOCALE_LABELS } from "@calm-stories/shared";
 import type { StoryPage, SupportedLocale } from "@calm-stories/shared";
 import type { RootStackParamList } from "@/navigation/Navigator";
@@ -38,6 +41,8 @@ export default function PageEditor() {
   const [editTextSq, setEditTextSq] = useState("");
   const [editTextEn, setEditTextEn] = useState("");
   const [adding, setAdding] = useState(false);
+  const [uploadingPageId, setUploadingPageId] = useState<string | null>(null);
+  const [newPageImageUri, setNewPageImageUri] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStory(storyId);
@@ -45,16 +50,79 @@ export default function PageEditor() {
 
   const pages = currentStory?.pages || [];
 
+  const pickImage = async (): Promise<ImagePicker.ImagePickerAsset | null> => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) return null;
+
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType || "image/jpeg";
+
+    if (!["image/png", "image/jpeg", "image/webp"].includes(mimeType)) {
+      Alert.alert("Invalid format", "Only PNG, JPEG, and WebP images are allowed.");
+      return null;
+    }
+
+    if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+      Alert.alert("File too large", "Maximum image size is 5MB.");
+      return null;
+    }
+
+    return asset;
+  };
+
+  const handleUploadForPage = async (pageId: string) => {
+    const asset = await pickImage();
+    if (!asset) return;
+
+    setUploadingPageId(pageId);
+    try {
+      const filename = asset.uri.split("/").pop() || `image_${Date.now()}.jpg`;
+      const mimeType = asset.mimeType || "image/jpeg";
+      const url = await uploadFile(asset.uri, filename, mimeType, storyId, "page");
+      await updatePage(storyId, pageId, { image_url: url });
+    } catch (err) {
+      Alert.alert("Upload failed", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setUploadingPageId(null);
+    }
+  };
+
+  const handlePickNewPageImage = async () => {
+    const asset = await pickImage();
+    if (asset) {
+      setNewPageImageUri(asset.uri);
+    }
+  };
+
   const handleAddPage = async () => {
     if (!newTextSq.trim() && !newTextEn.trim()) return;
     setAdding(true);
-    await addPage(storyId, {
-      text_sq: newTextSq.trim(),
-      text_en: newTextEn.trim(),
-    });
-    setNewTextSq("");
-    setNewTextEn("");
-    setAdding(false);
+    try {
+      let imageUrl: string | undefined;
+
+      if (newPageImageUri) {
+        const filename = newPageImageUri.split("/").pop() || `image_${Date.now()}.jpg`;
+        imageUrl = await uploadFile(newPageImageUri, filename, "image/jpeg", storyId, "page");
+      }
+
+      await addPage(storyId, {
+        text_sq: newTextSq.trim(),
+        text_en: newTextEn.trim(),
+        image_url: imageUrl,
+      });
+      setNewTextSq("");
+      setNewTextEn("");
+      setNewPageImageUri(null);
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Failed to add page");
+    } finally {
+      setAdding(false);
+    }
   };
 
   const handleSaveEdit = async (pageId: string) => {
@@ -122,6 +190,7 @@ export default function PageEditor() {
 
   const renderPage = ({ item, index }: { item: StoryPage; index: number }) => {
     const isEditing = editingPage === item.id;
+    const isUploading = uploadingPageId === item.id;
     const displayText = activeLocale === "sq" ? item.text_sq : item.text_en;
 
     return (
@@ -134,7 +203,7 @@ export default function PageEditor() {
               onPress={() => movePage(index, "up")}
               disabled={index === 0}
             >
-              <Text style={styles.arrowText}>▲</Text>
+              <Text style={styles.arrowText}>{"\u25B2"}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -144,19 +213,19 @@ export default function PageEditor() {
               onPress={() => movePage(index, "down")}
               disabled={index === pages.length - 1}
             >
-              <Text style={styles.arrowText}>▼</Text>
+              <Text style={styles.arrowText}>{"\u25BC"}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.iconBtn}
               onPress={() => (isEditing ? handleSaveEdit(item.id) : startEdit(item))}
             >
-              <Text style={styles.iconText}>{isEditing ? "✓" : "✏️"}</Text>
+              <Text style={styles.iconText}>{isEditing ? "\u2713" : "\u270F\uFE0F"}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.iconBtn}
               onPress={() => handleDelete(item)}
             >
-              <Text style={styles.iconText}>🗑️</Text>
+              <Text style={styles.iconText}>{"\uD83D\uDDD1\uFE0F"}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -206,7 +275,6 @@ export default function PageEditor() {
                 </Text>
               )}
             </Text>
-            {/* Show indicator if the other language is missing */}
             {activeLocale === "sq" && !item.text_en && (
               <Text style={styles.missingHint}>{"\uD83C\uDDEC\uD83C\uDDE7"} English text missing</Text>
             )}
@@ -216,14 +284,41 @@ export default function PageEditor() {
           </View>
         )}
 
-        {item.image_url && (
-          <Text style={styles.mediaTag}>🖼️ Has image</Text>
+        {/* Image section */}
+        {item.image_url ? (
+          <View style={styles.imageSection}>
+            <Image source={{ uri: item.image_url }} style={styles.pageImage} />
+            <TouchableOpacity
+              style={styles.changeImageBtn}
+              onPress={() => handleUploadForPage(item.id)}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <ActivityIndicator color={COLORS.admin.primary} size="small" />
+              ) : (
+                <Text style={styles.changeImageText}>Change image</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.addImageBtn}
+            onPress={() => handleUploadForPage(item.id)}
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <ActivityIndicator color={COLORS.admin.primary} size="small" />
+            ) : (
+              <Text style={styles.addImageText}>+ Add image</Text>
+            )}
+          </TouchableOpacity>
         )}
+
         {item.audio_path_sq && (
-          <Text style={styles.mediaTag}>🔊 Audio (SQ)</Text>
+          <Text style={styles.mediaTag}>{"\uD83D\uDD0A"} Audio (SQ)</Text>
         )}
         {item.audio_path_en && (
-          <Text style={styles.mediaTag}>🔊 Audio (EN)</Text>
+          <Text style={styles.mediaTag}>{"\uD83D\uDD0A"} Audio (EN)</Text>
         )}
       </View>
     );
@@ -259,7 +354,7 @@ export default function PageEditor() {
         }
       />
 
-      {/* Add page form — both languages */}
+      {/* Add page form */}
       <View style={styles.addSection}>
         <Text style={styles.langLabel}>{"\uD83C\uDDE6\uD83C\uDDF1"} Shqip</Text>
         <TextInput
@@ -279,6 +374,19 @@ export default function PageEditor() {
           placeholderTextColor={COLORS.admin.textLight}
           multiline
         />
+
+        {/* New page image picker */}
+        <TouchableOpacity style={styles.pickImageBtn} onPress={handlePickNewPageImage}>
+          {newPageImageUri ? (
+            <View style={styles.newImagePreview}>
+              <Image source={{ uri: newPageImageUri }} style={styles.previewThumb} />
+              <Text style={styles.pickImageText}>Change image</Text>
+            </View>
+          ) : (
+            <Text style={styles.pickImageText}>+ Attach image</Text>
+          )}
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[
             styles.addButton,
@@ -498,5 +606,68 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 15,
     fontWeight: "600",
+  },
+  // Image styles
+  imageSection: {
+    marginTop: 8,
+  },
+  pageImage: {
+    width: "100%",
+    height: 160,
+    borderRadius: 8,
+    backgroundColor: "#F0F0F0",
+  },
+  changeImageBtn: {
+    marginTop: 6,
+    alignSelf: "flex-start",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: COLORS.admin.border,
+  },
+  changeImageText: {
+    fontSize: 12,
+    color: COLORS.admin.primary,
+    fontWeight: "600",
+  },
+  addImageBtn: {
+    marginTop: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: COLORS.admin.border,
+    alignItems: "center",
+  },
+  addImageText: {
+    fontSize: 13,
+    color: COLORS.admin.primary,
+    fontWeight: "600",
+  },
+  pickImageBtn: {
+    marginBottom: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: COLORS.admin.border,
+    alignItems: "center",
+  },
+  pickImageText: {
+    fontSize: 13,
+    color: COLORS.admin.primary,
+    fontWeight: "600",
+  },
+  newImagePreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  previewThumb: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: "#F0F0F0",
   },
 });
