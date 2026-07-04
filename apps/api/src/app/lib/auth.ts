@@ -5,7 +5,8 @@ import { queryOne } from "@calm-stories/db";
 import type { User } from "@calm-stories/shared";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN ||
+  "7d") as jwt.SignOptions["expiresIn"];
 
 // ─── Password hashing ────────────────────────
 

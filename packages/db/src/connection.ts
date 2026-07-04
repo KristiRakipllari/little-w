@@ -19,9 +19,10 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
+// Idle clients can drop (network blips, managed Postgres timeouts) — log and
+// let the pool replace the connection instead of crashing the process
 pool.on("error", (err) => {
-  console.error("Unexpected database error:", err);
-  process.exit(-1);
+  console.error("Unexpected error on idle database client:", err);
 });
 
 export async function query<T = any>(

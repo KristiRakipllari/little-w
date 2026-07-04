@@ -26,6 +26,23 @@ export async function PUT(req: NextRequest, { params }: Params) {
       return error("page_ids array is required");
     }
 
+    // page_ids must be exactly the story's page set — a partial or mismatched
+    // list would leave unlisted pages with broken page numbers
+    const existingPages = await query<{ id: string }>(
+      "SELECT id FROM story_pages WHERE story_id = $1",
+      [params.id]
+    );
+    const existingIds = new Set(existingPages.map((p) => p.id));
+    const sentIds = new Set(body.page_ids);
+
+    if (
+      sentIds.size !== body.page_ids.length ||
+      sentIds.size !== existingIds.size ||
+      body.page_ids.some((id) => !existingIds.has(id))
+    ) {
+      return error("page_ids must contain each page of the story exactly once");
+    }
+
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
