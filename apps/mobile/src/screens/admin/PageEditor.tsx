@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
   },
   pageImage: {
     width: "100%",
-    height: 160,
+    aspectRatio: 4 / 3,
     borderRadius: 8,
     backgroundColor: "#F0F0F0",
   },

@@ -5,14 +5,17 @@ import { TamaguiProvider } from "tamagui";
 import config from "@/theme/config";
 import Navigator from "@/navigation/Navigator";
 import { useAppStore } from "@/store/appStore";
+import { useReadingStatsStore } from "@/store/readingStatsStore";
 import { getThemeById } from "@calm-stories/shared";
 
 function AppContent() {
   const { hydrated, hydrate, themeId } = useAppStore();
+  const hydrateStats = useReadingStatsStore((s) => s.hydrate);
   const theme = getThemeById(themeId);
 
   useEffect(() => {
     hydrate();
+    hydrateStats();
   }, []);
 
   if (!hydrated) {

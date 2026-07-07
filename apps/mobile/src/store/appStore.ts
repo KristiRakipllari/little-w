@@ -13,9 +13,9 @@ interface AppState {
   agreed: boolean;
   hydrated: boolean;
 
-  // Active story
-  currentStory: string | null;
-  currentPage: number;
+  // Reading progress (most recently opened story)
+  lastReadStoryId: string | null;
+  lastReadPage: number;
   paywallStory: string | null;
 
   // Parent gate
@@ -31,8 +31,7 @@ interface AppState {
   // Actions
   setAgeChoice: (choice: AgeChoice) => void;
   setAgreed: (agreed: boolean) => void;
-  setCurrentStory: (storyId: string | null, page?: number) => void;
-  setCurrentPage: (page: number) => void;
+  setLastRead: (storyId: string, page: number) => void;
   setPaywallStory: (storyId: string | null) => void;
   setParentEmail: (email: string) => void;
   setLocale: (locale: Locale) => void;
@@ -49,8 +48,8 @@ const STORAGE_KEY = "@littleworld/app";
 const DEFAULTS = {
   ageChoice: null as AgeChoice,
   agreed: false,
-  currentStory: null as string | null,
-  currentPage: 1,
+  lastReadStoryId: null as string | null,
+  lastReadPage: 1,
   paywallStory: null as string | null,
   parentEmail: "",
   locale: "sq" as Locale,
@@ -76,11 +75,9 @@ export const useAppStore = create<AppState>((set) => ({
     set({ agreed });
     persist({ agreed });
   },
-  setCurrentStory: (storyId, page = 1) => {
-    set({ currentStory: storyId, currentPage: page });
-  },
-  setCurrentPage: (currentPage) => {
-    set({ currentPage });
+  setLastRead: (storyId, page) => {
+    set({ lastReadStoryId: storyId, lastReadPage: page });
+    persist({ lastReadStoryId: storyId, lastReadPage: page });
   },
   setPaywallStory: (paywallStory) => {
     set({ paywallStory });

@@ -11,6 +11,7 @@ export const DIFFICULTY_LABELS: Record<string, string> = {
 export const FREE_STORY_LIMIT = 3;
 export const FREE_TRIAL_DAYS = 7;
 export const SUBSCRIPTION_PRICE = 2.99;
+export const SUPPORT_EMAIL = "hello@littleworld.app";
 
 export const API_ENDPOINTS = {
   AUTH: {

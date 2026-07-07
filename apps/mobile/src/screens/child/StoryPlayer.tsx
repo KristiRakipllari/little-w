@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import Btn from "@/components/Btn";
 import { useAppStore } from "@/store/appStore";
 import { useTranslation } from "@/i18n";
 import { useStoryStore } from "@/store/storyStore";
+import { useReadingStatsStore } from "@/store/readingStatsStore";
 import { getThemeById } from "@calm-stories/shared";
 import type { StoryPage } from "@calm-stories/shared";
 
@@ -37,6 +38,9 @@ interface Props {
 export default function StoryPlayer({ storyId, onBack }: Props) {
   const themeId = useAppStore((s) => s.themeId);
   const locale = useAppStore((s) => s.locale);
+  const lastReadStoryId = useAppStore((s) => s.lastReadStoryId);
+  const lastReadPage = useAppStore((s) => s.lastReadPage);
+  const setLastRead = useAppStore((s) => s.setLastRead);
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
 
@@ -46,12 +50,65 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
   };
   const { currentStory, isLoading, fetchStory, clearCurrentStory } =
     useStoryStore();
-  const [pageIdx, setPageIdx] = useState(0);
+  // Resume where the reader left off if this is the story they last opened.
+  const [pageIdx, setPageIdx] = useState(() =>
+    lastReadStoryId === storyId ? Math.max(0, lastReadPage - 1) : 0
+  );
 
   useEffect(() => {
     fetchStory(storyId);
     return () => clearCurrentStory();
   }, [storyId]);
+
+  // ── Reading stats (on-device, shown in the parent dashboard) ──
+  const recordOpen = useReadingStatsStore((s) => s.recordOpen);
+  const recordFinish = useReadingStatsStore((s) => s.recordFinish);
+  const addReadingTime = useReadingStatsStore((s) => s.addReadingTime);
+  const openRecorded = useRef(false);
+  const finishRecorded = useRef(false);
+
+  // One "open" per visit, once the story has actually loaded
+  useEffect(() => {
+    if (currentStory && !openRecorded.current) {
+      openRecorded.current = true;
+      recordOpen(storyId, currentStory.title);
+    }
+  }, [currentStory, storyId]);
+
+  // Time spent on this screen counts as calm reading time
+  useEffect(() => {
+    const startedAt = Date.now();
+    return () => {
+      addReadingTime(storyId, (Date.now() - startedAt) / 1000);
+    };
+  }, [storyId]);
+
+  // Reaching the last page counts as finishing the story (once per visit)
+  useEffect(() => {
+    if (
+      currentStory &&
+      currentStory.pages.length > 0 &&
+      pageIdx === currentStory.pages.length - 1 &&
+      !finishRecorded.current
+    ) {
+      finishRecorded.current = true;
+      recordFinish(storyId);
+    }
+  }, [pageIdx, currentStory, storyId]);
+
+  // Clamp the resumed page in case the story now has fewer pages than saved.
+  useEffect(() => {
+    if (currentStory && pageIdx > currentStory.pages.length - 1) {
+      setPageIdx(Math.max(0, currentStory.pages.length - 1));
+    }
+  }, [currentStory]);
+
+  // Record the most recently opened story and page so the home screen can resume it.
+  useEffect(() => {
+    if (currentStory) {
+      setLastRead(storyId, pageIdx + 1);
+    }
+  }, [storyId, pageIdx, currentStory]);
 
   if (isLoading || !currentStory) {
     return (
@@ -218,9 +275,10 @@ const styles = StyleSheet.create({
   },
 
   // Image
-  imageWrap: { position: "relative" },
+  imageWrap: { position: "relative", marginTop: 50 },
   image: {
-    height: 300,
+    width: "100%",
+    aspectRatio: 4 / 3,
     borderRadius: 24,
     overflow: "hidden",
   },

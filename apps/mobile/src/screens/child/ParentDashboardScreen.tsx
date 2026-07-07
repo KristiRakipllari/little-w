@@ -1,75 +1,137 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Modal,
+  Linking,
+  Platform,
 } from "react-native";
 import Svg, { Path, Rect } from "react-native-svg";
 import ScreenHeader from "@/components/ScreenHeader";
 import Card from "@/components/Card";
 import Btn from "@/components/Btn";
 import { useAppStore } from "@/store/appStore";
+import { useReadingStatsStore, computeDashboard } from "@/store/readingStatsStore";
 import { useTranslation } from "@/i18n";
-import { getThemeById } from "@calm-stories/shared";
+import { getThemeById, SUBSCRIPTION_PRICE, SUPPORT_EMAIL } from "@calm-stories/shared";
 import type { AppTheme } from "@calm-stories/shared";
-
-// ── Types ────────────────────────────────────────
-interface DashboardData {
-  week: number[];
-  days: string[];
-  todayIdx: number;
-  streak: number;
-  storiesRead: number;
-  calmMinutes: number;
-  weeklyDelta: number;
-  favorite: {
-    title: string;
-    opened: number;
-    finished: number;
-    tint: [string, string];
-  };
-  plan: string;
-}
 
 interface Props {
   onBack: () => void;
   onClose: () => void;
   onPaywall: () => void;
   subscribed?: boolean;
-  data?: DashboardData;
 }
 
-// ── Demo data (replace with real analytics later) ──
-const DEMO_DATA: DashboardData = {
-  week: [4, 8, 0, 12, 6, 10, 7],
-  days: ["M", "T", "W", "T", "F", "S", "S"],
-  todayIdx: 6,
-  streak: 4,
-  storiesRead: 7,
-  calmMinutes: 47,
-  weeklyDelta: 12,
-  favorite: {
-    title: "The Happy Morning",
-    opened: 8,
-    finished: 5,
-    tint: ["#FFE8C7", "#FFC98A"],
-  },
-  plan: "Premium · $2.99/mo",
+const FAVORITE_TINT: [string, string] = ["#FFE8C7", "#FFC98A"];
+
+type DialogState = {
+  title: string;
+  message: string;
+  actions: { label: string; destructive?: boolean; onPress?: () => void }[];
+} | null;
+
+// Single-letter day labels indexed by Date.getDay() (Sunday = 0)
+const DAY_LETTERS: Record<string, string[]> = {
+  en: ["S", "M", "T", "W", "T", "F", "S"],
+  sq: ["D", "H", "M", "M", "E", "P", "Sh"],
 };
+
+// Subscriptions are billed by the store, so cancellation happens there too —
+// Apple requires this for iOS; in-app we can only deep-link to the page.
+const STORE_SUBSCRIPTIONS_URL =
+  Platform.OS === "ios"
+    ? "https://apps.apple.com/account/subscriptions"
+    : "https://play.google.com/store/account/subscriptions";
 
 export default function ParentDashboardScreen({
   onBack,
   onClose,
   onPaywall,
   subscribed = false,
-  data,
 }: Props) {
   const themeId = useAppStore((s) => s.themeId);
   const theme = getThemeById(themeId);
-  const { t } = useTranslation();
-  const d = data || DEMO_DATA;
+  const { t, locale } = useTranslation();
+
+  const days = useReadingStatsStore((s) => s.days);
+  const storyStats = useReadingStatsStore((s) => s.stories);
+  const d = useMemo(() => computeDashboard(days, storyStats), [days, storyStats]);
+
+  const dayLetters = DAY_LETTERS[locale] || DAY_LETTERS.en;
+  const dayLabels = d.weekDates.map((date) => dayLetters[date.getDay()]);
+  const price = SUBSCRIPTION_PRICE.toFixed(2);
+  const plan = subscribed
+    ? t("parentDashboard.planPremium", { price })
+    : t("parentDashboard.planFree");
+
+  // ── Account row actions ─────────────────────────
+  // Rendered as an in-app Modal (not Alert.alert, which is a no-op on web)
+  const [dialog, setDialog] = useState<DialogState>(null);
+
+  const openStoreSubscriptions = () => {
+    Linking.openURL(STORE_SUBSCRIPTIONS_URL).catch(() => {});
+  };
+
+  const handleSubscription = () => {
+    if (subscribed) {
+      setDialog({
+        title: t("parentDashboard.subDialogTitle"),
+        message: t("parentDashboard.subActiveMsg", { price }),
+        actions: [
+          {
+            label: t("parentDashboard.cancelSub"),
+            destructive: true,
+            onPress: openStoreSubscriptions,
+          },
+          { label: t("parentDashboard.close") },
+        ],
+      });
+    } else {
+      setDialog({
+        title: t("parentDashboard.subDialogTitle"),
+        message: t("parentDashboard.subFreeMsg"),
+        actions: [
+          { label: t("parentDashboard.seePremium"), onPress: onPaywall },
+          { label: t("parentDashboard.close") },
+        ],
+      });
+    }
+  };
+
+  // TODO: call the store restore API (RevenueCat) once real billing is live
+  const handleRestore = () => {
+    setDialog({
+      title: t("parentDashboard.restorePurchases"),
+      message: t("parentDashboard.restoreMsg"),
+      actions: [{ label: t("parentDashboard.close") }],
+    });
+  };
+
+  const handleSupport = () => {
+    setDialog({
+      title: t("parentDashboard.contactSupport"),
+      message: t("parentDashboard.supportMsg", { email: SUPPORT_EMAIL }),
+      actions: [
+        {
+          label: t("parentDashboard.emailUs"),
+          onPress: () => {
+            const subject = encodeURIComponent("Little World — support");
+            const body = encodeURIComponent(
+              `\n\n—\n${Platform.OS} · Little World v1.0.0`
+            );
+            Linking.openURL(
+              `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`
+            ).catch(() => {});
+          },
+        },
+        { label: t("parentDashboard.close") },
+      ],
+    });
+  };
 
   const maxMins = Math.max(...d.week);
   const stats = [
@@ -119,7 +181,7 @@ export default function ParentDashboardScreen({
                 <Text style={[styles.sectionLabel, { color: theme.textLight }]}>
                   {t("parentDashboard.thisWeek")}
                 </Text>
-                <BarChart week={d.week} days={d.days} todayIdx={d.todayIdx} maxMins={maxMins} t={theme} />
+                <BarChart week={d.week} days={dayLabels} todayIdx={d.todayIdx} maxMins={maxMins} t={theme} />
               </Card>
               <View style={styles.statsRow}>
                 {stats.map((s) => (
@@ -214,7 +276,7 @@ export default function ParentDashboardScreen({
               </View>
             )}
           </View>
-          <BarChart week={d.week} days={d.days} todayIdx={d.todayIdx} maxMins={maxMins} t={theme} />
+          <BarChart week={d.week} days={dayLabels} todayIdx={d.todayIdx} maxMins={maxMins} t={theme} />
         </Card>
 
         {/* Stats row */}
@@ -229,17 +291,25 @@ export default function ParentDashboardScreen({
           {t("parentDashboard.favoriteStory")}
         </Text>
         <Card t={theme} style={styles.favoriteCard}>
-          <View style={[styles.favThumb, { backgroundColor: d.favorite.tint[0] }]}>
-            <View style={[styles.favCircle, { backgroundColor: d.favorite.tint[1] }]} />
-          </View>
-          <View style={styles.favInfo}>
-            <Text style={[styles.favTitle, { color: theme.textDark }]} numberOfLines={1}>
-              {d.favorite.title}
-            </Text>
+          {d.favorite ? (
+            <>
+              <View style={[styles.favThumb, { backgroundColor: FAVORITE_TINT[0] }]}>
+                <View style={[styles.favCircle, { backgroundColor: FAVORITE_TINT[1] }]} />
+              </View>
+              <View style={styles.favInfo}>
+                <Text style={[styles.favTitle, { color: theme.textDark }]} numberOfLines={1}>
+                  {d.favorite.title}
+                </Text>
+                <Text style={[styles.favSub, { color: theme.textLight }]}>
+                  {t("parentDashboard.opened", { count: d.favorite.opened })} · {t("parentDashboard.finished", { count: d.favorite.finished })}
+                </Text>
+              </View>
+            </>
+          ) : (
             <Text style={[styles.favSub, { color: theme.textLight }]}>
-              {t("parentDashboard.opened", { count: d.favorite.opened })} · {t("parentDashboard.finished", { count: d.favorite.finished })}
+              {t("parentDashboard.noReadingYet")}
             </Text>
-          </View>
+          )}
         </Card>
 
         {/* Account section */}
@@ -250,21 +320,25 @@ export default function ParentDashboardScreen({
           <DashRow
             t={theme}
             label={t("parentDashboard.subscription")}
-            detail={d.plan}
+            detail={plan}
+            onPress={handleSubscription}
           />
           <DashRow
             t={theme}
             label={t("parentDashboard.manageAppStore")}
             external
+            onPress={openStoreSubscriptions}
           />
           <DashRow
             t={theme}
             label={t("parentDashboard.restorePurchases")}
+            onPress={handleRestore}
           />
           <DashRow
             t={theme}
             label={t("parentDashboard.contactSupport")}
             last
+            onPress={handleSupport}
           />
         </Card>
 
@@ -276,6 +350,69 @@ export default function ParentDashboardScreen({
           {t("parentDashboard.privacyNote")}
         </Text>
       </ScrollView>
+
+      {/* Account dialog */}
+      <Modal
+        visible={dialog !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDialog(null)}
+      >
+        <TouchableOpacity
+          style={styles.dialogBackdrop}
+          activeOpacity={1}
+          onPress={() => setDialog(null)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.dialogCard, { backgroundColor: theme.surface }]}
+          >
+            <Text style={[styles.dialogTitle, { color: theme.textDark }]}>
+              {dialog?.title}
+            </Text>
+            <Text style={[styles.dialogMsg, { color: theme.textLight }]}>
+              {dialog?.message}
+            </Text>
+            {dialog?.actions.map((action, i) => (
+              <TouchableOpacity
+                key={i}
+                accessibilityRole="button"
+                style={[
+                  styles.dialogBtn,
+                  {
+                    backgroundColor: action.destructive
+                      ? "#FBEAE8"
+                      : action.onPress
+                        ? theme.primarySoft
+                        : "transparent",
+                    borderColor: theme.border,
+                    borderWidth: action.onPress ? 0 : 1,
+                  },
+                ]}
+                onPress={() => {
+                  setDialog(null);
+                  action.onPress?.();
+                }}
+              >
+                <Text
+                  style={[
+                    styles.dialogBtnText,
+                    {
+                      color: action.destructive
+                        ? "#C0392B"
+                        : action.onPress
+                          ? theme.primaryDeep
+                          : theme.textDark,
+                    },
+                  ]}
+                >
+                  {action.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -366,17 +503,21 @@ function DashRow({
   detail,
   external,
   last,
+  onPress,
   t,
 }: {
   label: string;
   detail?: string;
   external?: boolean;
   last?: boolean;
+  onPress?: () => void;
   t: AppTheme;
 }) {
   return (
     <TouchableOpacity
       activeOpacity={0.7}
+      onPress={onPress}
+      accessibilityRole="button"
       style={[
         styles.dashRow,
         !last && { borderBottomWidth: 1, borderBottomColor: t.border },
@@ -652,6 +793,45 @@ const styles = StyleSheet.create({
   lockText: {
     fontSize: 16,
     fontWeight: "800",
+  },
+
+  // Dialog
+  dialogBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(30, 30, 30, 0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  dialogCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 24,
+    padding: 22,
+    gap: 10,
+  },
+  dialogTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+  dialogMsg: {
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 21,
+    marginBottom: 8,
+  },
+  dialogBtn: {
+    minHeight: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  dialogBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
   },
 
   // Common

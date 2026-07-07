@@ -40,6 +40,8 @@ interface Props {
 
 export default function StoryList({ onStory, onPaywall }: Props) {
   const themeId = useAppStore((s) => s.themeId);
+  const lastReadStoryId = useAppStore((s) => s.lastReadStoryId);
+  const lastReadPage = useAppStore((s) => s.lastReadPage);
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
   const { stories, isLoading, fetchStories } = useStoryStore();
@@ -86,8 +88,14 @@ export default function StoryList({ onStory, onPaywall }: Props) {
     );
   }
 
-  // Pick the first non-premium story as the featured/continue card
-  const featured = stories.find((s) => !s.is_premium);
+  // Featured/continue card: the most recently opened story, falling back to
+  // the first non-premium story when nothing has been read yet.
+  const recent = stories.find((s) => s.id === lastReadStoryId);
+  const featured = recent ?? stories.find((s) => !s.is_premium);
+  const featuredPage =
+    featured && featured.id === lastReadStoryId
+      ? Math.min(Math.max(lastReadPage, 1), featured.page_count)
+      : 1;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -109,7 +117,13 @@ export default function StoryList({ onStory, onPaywall }: Props) {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           featured ? (
-            <FeaturedCard story={featured} theme={theme} t={t} onPress={() => onStory(featured.id)} />
+            <FeaturedCard
+              story={featured}
+              currentPage={featuredPage}
+              theme={theme}
+              t={t}
+              onPress={() => handlePress(featured)}
+            />
           ) : null
         }
         ListEmptyComponent={
@@ -152,17 +166,20 @@ export default function StoryList({ onStory, onPaywall }: Props) {
 
 function FeaturedCard({
   story,
+  currentPage,
   theme,
   t,
   onPress,
 }: {
   story: Story;
+  currentPage: number;
   theme: ReturnType<typeof getThemeById>;
   t: (key: string, options?: Record<string, any>) => string;
   onPress: () => void;
 }) {
   const tint = TINTS[story.level] || TINTS.beginner;
   const decor = DECOR_COLORS[story.level] || "#FFB347";
+  const progress = story.page_count > 0 ? currentPage / story.page_count : 0;
 
   return (
     <Card t={theme} style={styles.featuredCard} onPress={onPress}>
@@ -178,7 +195,7 @@ function FeaturedCard({
         />
         <View style={styles.continuePill}>
           <Text style={styles.continueText}>
-            {t("storyList.continueLabel", { current: 2, total: story.page_count })}
+            {t("storyList.continueLabel", { current: currentPage, total: story.page_count })}
           </Text>
         </View>
       </View>
@@ -197,7 +214,10 @@ function FeaturedCard({
         </View>
         <View style={[styles.progressTrack, { backgroundColor: theme.primarySoft }]}>
           <View
-            style={[styles.progressFill, { backgroundColor: theme.primary, width: "40%" }]}
+            style={[
+              styles.progressFill,
+              { backgroundColor: theme.primary, width: `${Math.round(progress * 100)}%` },
+            ]}
           />
         </View>
       </View>
@@ -342,7 +362,8 @@ const styles = StyleSheet.create({
   // Featured card
   featuredCard: { marginBottom: 8, overflow: "hidden" },
   featuredImage: {
-    height: 160,
+    width: "100%",
+    aspectRatio: 16 / 9,
     position: "relative",
     overflow: "hidden",
   },
