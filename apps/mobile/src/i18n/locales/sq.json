@@ -48,6 +48,47 @@
     "contactBody": "Pyetje? Kontaktoni ekipin n\u00eb hello@littleworld.app \u2014 p\u00ebrgjigjemi brenda dy dit\u00ebve t\u00eb pun\u00ebs.",
     "understandBtn": "E kuptoj"
   },
+  "terms": {
+    "headerTitle": "Kushtet e Sh\u00ebrbimit",
+    "lastUpdated": "P\u00ebrdituar s\u00eb fundi: Korrik 2026",
+    "agreementTitle": "Marr\u00ebveshja",
+    "agreementBody": "Little World \u00ebsht\u00eb krijuar p\u00ebr f\u00ebmij\u00ebt, por menaxhohet nga nj\u00eb prind ose kujdestar. Duke p\u00ebrdorur aplikacionin, nj\u00eb i rritur i pranon k\u00ebto kushte n\u00eb em\u00ebr t\u00eb f\u00ebmij\u00ebs.",
+    "licenseTitle": "P\u00ebrdorimi i aplikacionit",
+    "licenseBody": "Ju japim nj\u00eb licenc\u00eb personale, jokomerciale p\u00ebr t\u00eb shijuar Little World dhe tregimet e tij me familjen tuaj. Ju lutemi mos i kopjoni, rishitni ose rishp\u00ebrndani tregimet, imazhet ose audion.",
+    "subscriptionTitle": "Abonimet dhe faturimi",
+    "subscriptionBody": "Tregimet premium ofrohen p\u00ebrmes nj\u00eb abonimi q\u00eb rinovohet automatikisht, faturuar nga App Store ose Google Play. Rinovohet derisa t\u00eb anulohet. Mund ta menaxhoni ose anuloni n\u00eb \u00e7do koh\u00eb nga llogaria juaj e dyqanit \u2014 fshirja e aplikacionit nuk e anulon at\u00eb.",
+    "contentTitle": "P\u00ebrmbajtja jon\u00eb",
+    "contentBody": "T\u00eb gjitha tregimet, ilustrimet dhe rr\u00ebfimi n\u00eb Little World na p\u00ebrkasin neve ose licencuesve tan\u00eb dhe mbrohen nga t\u00eb drejtat e autorit. Ato ofrohen vet\u00ebm p\u00ebr k\u00ebnaq\u00ebsin\u00eb personale t\u00eb f\u00ebmij\u00ebs suaj.",
+    "safeTitle": "Nj\u00eb hap\u00ebsir\u00eb e sigurt p\u00ebr f\u00ebmij\u00ebt",
+    "safeBody": "Nuk ka reklama dhe nuk ka ndjekje nga pal\u00eb t\u00eb treta. Veprimet e t\u00eb rriturve \u2014 abonimi, kontaktimi me ne, hapja e lidhjeve t\u00eb jashtme \u2014 ndodhen pas nj\u00eb porte prind\u00ebrore. Prind\u00ebrit jan\u00eb p\u00ebrgjegj\u00ebs p\u00ebr mbik\u00ebqyrjen e p\u00ebrdorimit nga f\u00ebmija.",
+    "changesTitle": "Ndryshimet",
+    "changesBody": "Ne mund t'i p\u00ebrdit\u00ebsojm\u00eb k\u00ebto kushte nd\u00ebrsa aplikacioni rritet. Do t\u00eb p\u00ebrdit\u00ebsojm\u00eb dat\u00ebn m\u00eb lart kur ta b\u00ebjm\u00eb, dhe p\u00ebrdorimi i vazhduesh\u00ebm n\u00ebnkupton pranimin e ndryshimeve.",
+    "contactTitle": "Kontakti",
+    "contactBody": "Pyetje rreth k\u00ebtyre kushteve? Kontaktoni n\u00eb hello@littleworld.app \u2014 p\u00ebrgjigjemi brenda dy dit\u00ebve t\u00eb pun\u00ebs.",
+    "understandBtn": "E kuptoj"
+  },
+  "consent": {
+    "headerTitle": "P\u00eblqimi",
+    "heading": "Para se t\u00eb filloni",
+    "desc": "Ju lutemi konfirmoni sa m\u00eb posht\u00eb p\u00ebr t\u00eb vazhduar.",
+    "scrollHint": "L\u00ebvizni deri n\u00eb fund p\u00ebr t\u00eb vazhduar",
+    "continueBtn": "Vazhdo",
+    "agreeDocs": "Kam lexuar dhe pajtohem me Politik\u00ebn e Privat\u00ebsis\u00eb dhe Kushtet e Sh\u00ebrbimit",
+    "confirmGuardian": "Konfirmoj se jam prind, kujdestar ose profesionist q\u00eb mb\u00ebshtet nj\u00eb f\u00ebmij\u00eb me autiz\u00ebm ose nevoja zhvillimore",
+    "recommendationTitle": "Rekomandim",
+    "recommendationBody": "Little World \u00ebsht\u00eb krijuar si nj\u00eb mjet mb\u00ebshtet\u00ebs. Ju rekomandojm\u00eb ta diskutoni p\u00ebrdorimin e tij me psikologun, terapistin ose profesionistin p\u00ebrkat\u00ebs t\u00eb f\u00ebmij\u00ebs suaj p\u00ebrpara se t\u00eb filloni.",
+    "confirmBtn": "Konfirmo & vazhdo"
+  },
+  "mood": {
+    "headerFallback": "Tregim",
+    "prompt": "Si po ndihesh tani?",
+    "subtitle": "Prek fytyr\u00ebn q\u00eb t\u00eb p\u00ebrshtatet sot.",
+    "happy": "I g\u00ebzuar",
+    "okay": "N\u00eb rregull",
+    "worried": "I shqet\u00ebsuar",
+    "angry": "I zem\u00ebruar",
+    "startBtn": "Fillo tregimin"
+  },
 
   "storyList": {
     "todayLabel": "Sot",
@@ -65,7 +106,15 @@
     "pagePill": "Faqja {{current}} nga {{total}}",
     "readAloud": "Lexo me z\u00eb",
     "previous": "Para",
-    "next": "Tjetra"
+    "next": "Tjetra",
+    "finish": "Përfundo"
+  },
+
+  "storyComplete": {
+    "title": "E përfundove!",
+    "subtitle": "{{story}} — lexim i mrekullueshëm.",
+    "readAgain": "Lexoje përsëri",
+    "backToStories": "Kthehu te tregimet"
   },
 
   "paywall": {
@@ -159,6 +208,9 @@
     "calmTime": "Koha e qet\u00eb",
     "minutes": "minuta",
     "favoriteStory": "Tregimi i preferuar",
+    "moodSection": "Regjistrimet e humorit",
+    "moodEmpty": "Ende asnjë regjistrim — ndjenjat do të shfaqen këtu pasi fëmija juaj të hapë një tregim.",
+    "moodWeekTotal": "{{count}} regjistrime në 7 ditët e fundit",
     "opened": "Hapur {{count}} her\u00eb",
     "finished": "p\u00ebrfunduar {{count}}",
     "account": "Llogaria",
@@ -173,6 +225,10 @@
     "subActiveMsg": "Premium \u00b7 ${{price}}/muaj, faturohet p\u00ebrmes dyqanit t\u00eb aplikacioneve. Mund ta anuloni n\u00eb \u00e7do koh\u00eb \u2014 qasja vazhdon deri n\u00eb fund t\u00eb periudh\u00ebs s\u00eb paguar.",
     "subFreeMsg": "Jeni n\u00eb planin falas. Premium hap t\u00eb gjitha tregimet dhe rr\u00ebfimin me z\u00eb.",
     "cancelSub": "Anulo abonimin",
+    "confirmCancelTitle": "Të anulohet abonimi?",
+    "confirmCancelMsg": "Do ta mbani Premium deri në fund të periudhës që keni paguar tashmë. Pas saj, tregimet premium mbyllen sërish dhe nuk do të ketë pagesa të tjera.",
+    "confirmCancelYes": "Po, vazhdo me anulimin",
+    "keepSub": "Mbaj Premium",
     "close": "Mbyll",
     "restoreMsg": "Blerjet mund t\u00eb rikthehen k\u00ebtu sapo abonimet t\u00eb jen\u00eb aktive n\u00eb dyqanet e aplikacioneve.",
     "supportMsg": "Na shkruani n\u00eb {{email}} \u2014 p\u00ebrgjigjemi brenda dy dit\u00ebve pune.",

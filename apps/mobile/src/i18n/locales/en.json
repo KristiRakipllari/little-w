@@ -48,6 +48,47 @@
     "contactBody": "Questions? Reach the team at hello@littleworld.app \u2014 we reply within two working days.",
     "understandBtn": "I understand"
   },
+  "terms": {
+    "headerTitle": "Terms of Service",
+    "lastUpdated": "Last updated: Jul 2026",
+    "agreementTitle": "Agreement",
+    "agreementBody": "Little World is made for children but managed by a parent or guardian. By using the app, a grown-up accepts these terms on the child's behalf.",
+    "licenseTitle": "Using the app",
+    "licenseBody": "We give you a personal, non-commercial licence to enjoy Little World and its stories with your family. Please don't copy, resell, or redistribute the stories, images, or audio.",
+    "subscriptionTitle": "Subscriptions & billing",
+    "subscriptionBody": "Premium stories are offered through an auto-renewing subscription billed by the App Store or Google Play. It renews until cancelled. You can manage or cancel any time in your store account \u2014 deleting the app alone does not cancel it.",
+    "contentTitle": "Our content",
+    "contentBody": "All stories, illustrations, and narration in Little World belong to us or our licensors and are protected by copyright. They are provided for your child's personal enjoyment only.",
+    "safeTitle": "A safe space for kids",
+    "safeBody": "There are no ads and no third-party tracking. Grown-up actions \u2014 subscribing, contacting us, opening external links \u2014 sit behind a parental gate. Parents are responsible for supervising their child's use.",
+    "changesTitle": "Changes",
+    "changesBody": "We may update these terms as the app grows. We'll refresh the date above when we do, and continued use means the changes are accepted.",
+    "contactTitle": "Contact",
+    "contactBody": "Questions about these terms? Reach us at hello@littleworld.app \u2014 we reply within two working days.",
+    "understandBtn": "I understand"
+  },
+  "consent": {
+    "headerTitle": "Consent",
+    "heading": "Before you begin",
+    "desc": "Please confirm the following to continue.",
+    "scrollHint": "Scroll to the end to continue",
+    "continueBtn": "Continue",
+    "agreeDocs": "I have read and agree to the Privacy Policy and Terms & Conditions",
+    "confirmGuardian": "I confirm that I am a parent, guardian, or professional supporting a child with autism or developmental needs",
+    "recommendationTitle": "Recommendation",
+    "recommendationBody": "Little World is designed as a supportive tool. We recommend discussing its use with your child's psychologist, therapist, or relevant professional before starting.",
+    "confirmBtn": "Confirm & continue"
+  },
+  "mood": {
+    "headerFallback": "Story",
+    "prompt": "How are you feeling right now?",
+    "subtitle": "Tap the face that fits you today.",
+    "happy": "Happy",
+    "okay": "Okay",
+    "worried": "Worried",
+    "angry": "Angry",
+    "startBtn": "Start story"
+  },
 
   "storyList": {
     "todayLabel": "Today",
@@ -65,7 +106,15 @@
     "pagePill": "Page {{current}} of {{total}}",
     "readAloud": "Read aloud",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "finish": "Finish"
+  },
+
+  "storyComplete": {
+    "title": "You finished!",
+    "subtitle": "{{story}} — great reading.",
+    "readAgain": "Read it again",
+    "backToStories": "Back to stories"
   },
 
   "paywall": {
@@ -161,6 +210,9 @@
     "favoriteStory": "Favorite story",
     "opened": "Opened {{count}} times",
     "finished": "finished {{count}}",
+    "moodSection": "Mood check-ins",
+    "moodEmpty": "No check-ins yet — feelings will appear here after your child opens a story.",
+    "moodWeekTotal": "{{count}} check-ins in the last 7 days",
     "account": "Account",
     "subscription": "Subscription",
     "manageAppStore": "Manage in App Store",
@@ -173,6 +225,10 @@
     "subActiveMsg": "Premium · ${{price}}/month, billed through your app store. You can cancel any time — access lasts until the end of the paid period.",
     "subFreeMsg": "You're on the free plan. Premium unlocks all stories and audio narration.",
     "cancelSub": "Cancel subscription",
+    "confirmCancelTitle": "Cancel subscription?",
+    "confirmCancelMsg": "You'll keep Premium until the end of the period you've already paid for. After that, premium stories lock again and you won't be charged any further.",
+    "confirmCancelYes": "Yes, continue to cancel",
+    "keepSub": "Keep Premium",
     "close": "Close",
     "restoreMsg": "Purchases can be restored here once subscriptions launch in the app stores.",
     "supportMsg": "Write to us at {{email}} — we reply within two working days.",

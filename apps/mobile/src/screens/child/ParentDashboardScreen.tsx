@@ -15,6 +15,8 @@ import Card from "@/components/Card";
 import Btn from "@/components/Btn";
 import { useAppStore } from "@/store/appStore";
 import { useReadingStatsStore, computeDashboard } from "@/store/readingStatsStore";
+import { useMoodStore, computeMoodSummary } from "@/store/moodStore";
+import { MoodFace, MOOD_ORDER, MOOD_STYLES } from "@/components/MoodFace";
 import { useTranslation } from "@/i18n";
 import { getThemeById, SUBSCRIPTION_PRICE, SUPPORT_EMAIL } from "@calm-stories/shared";
 import type { AppTheme } from "@calm-stories/shared";
@@ -61,6 +63,9 @@ export default function ParentDashboardScreen({
   const storyStats = useReadingStatsStore((s) => s.stories);
   const d = useMemo(() => computeDashboard(days, storyStats), [days, storyStats]);
 
+  const moods = useMoodStore((s) => s.moods);
+  const moodSummary = useMemo(() => computeMoodSummary(moods), [moods]);
+
   const dayLetters = DAY_LETTERS[locale] || DAY_LETTERS.en;
   const dayLabels = d.weekDates.map((date) => dayLetters[date.getDay()]);
   const price = SUBSCRIPTION_PRICE.toFixed(2);
@@ -76,6 +81,23 @@ export default function ParentDashboardScreen({
     Linking.openURL(STORE_SUBSCRIPTIONS_URL).catch(() => {});
   };
 
+  // Extra confirmation before sending the parent to the store's cancel page,
+  // spelling out that paid-for access continues until the period ends
+  const confirmCancel = () => {
+    setDialog({
+      title: t("parentDashboard.confirmCancelTitle"),
+      message: t("parentDashboard.confirmCancelMsg"),
+      actions: [
+        {
+          label: t("parentDashboard.confirmCancelYes"),
+          destructive: true,
+          onPress: openStoreSubscriptions,
+        },
+        { label: t("parentDashboard.keepSub") },
+      ],
+    });
+  };
+
   const handleSubscription = () => {
     if (subscribed) {
       setDialog({
@@ -85,7 +107,7 @@ export default function ParentDashboardScreen({
           {
             label: t("parentDashboard.cancelSub"),
             destructive: true,
-            onPress: openStoreSubscriptions,
+            onPress: confirmCancel,
           },
           { label: t("parentDashboard.close") },
         ],
@@ -309,6 +331,42 @@ export default function ParentDashboardScreen({
             <Text style={[styles.favSub, { color: theme.textLight }]}>
               {t("parentDashboard.noReadingYet")}
             </Text>
+          )}
+        </Card>
+
+        {/* Mood check-ins */}
+        <Text style={[styles.sectionHeader, { color: theme.textLight }]}>
+          {t("parentDashboard.moodSection")}
+        </Text>
+        <Card t={theme} style={styles.moodCard}>
+          {moodSummary.total === 0 ? (
+            <Text style={[styles.favSub, { color: theme.textLight }]}>
+              {t("parentDashboard.moodEmpty")}
+            </Text>
+          ) : (
+            <>
+              <View style={styles.moodRow}>
+                {MOOD_ORDER.map((id) => (
+                  <View key={id} style={styles.moodCol}>
+                    <MoodFace
+                      id={id}
+                      color={MOOD_STYLES[id].face}
+                      ring={MOOD_STYLES[id].ring}
+                      size={44}
+                    />
+                    <Text style={[styles.moodCount, { color: theme.textDark }]}>
+                      {moodSummary.counts[id]}
+                    </Text>
+                    <Text style={[styles.moodName, { color: theme.textLight }]}>
+                      {t(`mood.${id}`)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={[styles.moodCaption, { color: theme.textLight }]}>
+                {t("parentDashboard.moodWeekTotal", { count: moodSummary.weekTotal })}
+              </Text>
+            </>
           )}
         </Card>
 
@@ -728,6 +786,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     marginTop: 2,
+  },
+
+  // Mood check-ins
+  moodCard: {
+    padding: 16,
+    marginBottom: 16,
+  },
+  moodRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  moodCol: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  moodCount: {
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: -0.4,
+    marginTop: 4,
+  },
+  moodName: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  moodCaption: {
+    fontSize: 12,
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 14,
   },
 
   // Account

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bgK1024" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0%" stop-color="#5C4A8A"/>
+      <stop offset="100%" stop-color="#2E1E5C"/>
+    </linearGradient>
+    <radialGradient id="globeK1024" cx="36%" cy="32%" r="60%">
+      <stop offset="0%" stop-color="#9AD0E8"/>
+      <stop offset="100%" stop-color="#4A90C8"/>
+    </radialGradient>
+    <clipPath id="sqK1024"><rect width="1024" height="1024" rx="225.28" ry="225.28"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" rx="225.28" ry="225.28" fill="url(#bgK1024)"/>
+  <g clip-path="url(#sqK1024)">
+    <!-- stars -->
+    <circle cx="143.36" cy="163.84" r="16.384" fill="#fff" opacity="0.55"/>
+    <circle cx="860.16" cy="122.88" r="14.335999999999999" fill="#fff" opacity="0.5"/>
+    <circle cx="901.12" cy="409.6" r="12.288" fill="#fff" opacity="0.4"/>
+    <circle cx="102.4" cy="573.44" r="13.312000000000001" fill="#fff" opacity="0.38"/>
+    <circle cx="819.2" cy="778.24" r="11.264000000000001" fill="#fff" opacity="0.35"/>
+    <!-- globe shadow -->
+    <circle cx="522.24" cy="532.48" r="317.44" fill="#000" opacity="0.18"/>
+    <!-- globe -->
+    <circle cx="512" cy="512" r="317.44" fill="url(#globeK1024)"/>
+    <!-- latitude lines -->
+    <ellipse cx="512" cy="512" rx="317.44" ry="92.16"  fill="none" stroke="#fff" stroke-width="9.216000000000001" opacity="0.2"/>
+    <ellipse cx="512" cy="512" rx="317.44" ry="184.32" fill="none" stroke="#fff" stroke-width="9.216000000000001" opacity="0.15"/>
+    <!-- longitude line -->
+    <line x1="512" y1="194.56" x2="512" y2="829.44" stroke="#fff" stroke-width="9.216000000000001" opacity="0.15"/>
+    <!-- land masses -->
+    <ellipse cx="430.08" cy="430.08" rx="92.16" ry="71.68"  fill="#82C098" opacity="0.88" transform="rotate(-25 430.08 430.08)"/>
+    <ellipse cx="593.92" cy="471.04" rx="61.44" ry="92.16"  fill="#82C098" opacity="0.82" transform="rotate(10 593.92 471.04)"/>
+    <ellipse cx="450.56" cy="593.92" rx="51.2" ry="40.96"  fill="#82C098" opacity="0.75"/>
+    <ellipse cx="634.88" cy="614.4" rx="40.96" ry="30.72"  fill="#82C098" opacity="0.7"/>
+    <!-- globe shine -->
+    <ellipse cx="409.6" cy="368.64" rx="81.92" ry="51.2"  fill="#fff" opacity="0.18" transform="rotate(-30 409.6 368.64)"/>
+    <!-- bookmark ribbon -->
+    <rect x="645.12" y="184.32" width="102.4" height="430.08" rx="20.48" fill="#F4B860"/>
+    <path d="M645.12 614.4 L696.32 552.96 L747.52 614.4" fill="#1C1238" opacity="0.0"/>
+    <polygon points="645.12,614.4 696.32,552.96 747.52,614.4" fill="#E8961A"/>
+    <!-- bookmark star -->
+    <path d="M696.32,266.24 l16.384,32.768 34.816,5.12 -25.6,24.576 6.144,34.816 -31.744,-16.384 -31.744,16.384 6.144,-34.816 -25.6,-24.576 34.816,-5.12z" fill="#fff" opacity="0.85"/>
+  </g>
+</svg>

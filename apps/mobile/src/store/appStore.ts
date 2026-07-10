@@ -7,10 +7,27 @@ export type TextSize = "s" | "m" | "l";
 export type MotionPref = "slow" | "normal" | "off";
 export type Locale = "sq" | "en";
 
+// Bump this whenever the Privacy Policy / Terms / consent copy changes in a way
+// that requires users to review and re-accept. Onboarding re-runs when the
+// stored consent version is older than this.
+export const CONSENT_VERSION = 1;
+
+export interface ConsentData {
+  version: number;
+  acceptedAt: string; // ISO timestamp
+  guardianConfirmed: boolean;
+}
+
+// Consent is valid only when it exists and matches the current version.
+export function hasValidConsent(consent: ConsentData | null): boolean {
+  return !!consent && consent.version >= CONSENT_VERSION;
+}
+
 interface AppState {
   // Onboarding
   ageChoice: AgeChoice;
   agreed: boolean;
+  consentData: ConsentData | null;
   hydrated: boolean;
 
   // Reading progress (most recently opened story)
@@ -31,6 +48,7 @@ interface AppState {
   // Actions
   setAgeChoice: (choice: AgeChoice) => void;
   setAgreed: (agreed: boolean) => void;
+  acceptConsent: (guardianConfirmed: boolean) => void;
   setLastRead: (storyId: string, page: number) => void;
   setPaywallStory: (storyId: string | null) => void;
   setParentEmail: (email: string) => void;
@@ -48,6 +66,7 @@ const STORAGE_KEY = "@littleworld/app";
 const DEFAULTS = {
   ageChoice: null as AgeChoice,
   agreed: false,
+  consentData: null as ConsentData | null,
   lastReadStoryId: null as string | null,
   lastReadPage: 1,
   paywallStory: null as string | null,
@@ -74,6 +93,16 @@ export const useAppStore = create<AppState>((set) => ({
   setAgreed: (agreed) => {
     set({ agreed });
     persist({ agreed });
+  },
+  acceptConsent: (guardianConfirmed) => {
+    const consentData: ConsentData = {
+      version: CONSENT_VERSION,
+      acceptedAt: new Date().toISOString(),
+      guardianConfirmed,
+    };
+    // Keep `agreed` in sync for any legacy checks.
+    set({ consentData, agreed: true });
+    persist({ consentData, agreed: true });
   },
   setLastRead: (storyId, page) => {
     set({ lastReadStoryId: storyId, lastReadPage: page });

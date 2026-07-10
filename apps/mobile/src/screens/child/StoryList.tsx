@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Rect, Path } from "react-native-svg";
 import Card from "@/components/Card";
@@ -184,15 +185,27 @@ function FeaturedCard({
   return (
     <Card t={theme} style={styles.featuredCard} onPress={onPress}>
       <View style={styles.featuredImage}>
-        <LinearGradient
-          colors={tint}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          style={[styles.decorCircle, { backgroundColor: decor, opacity: 0.55 }]}
-        />
+        {story.cover_image_url ? (
+          <Image
+            source={{ uri: story.cover_image_url }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+          />
+        ) : (
+          <>
+            <LinearGradient
+              colors={tint}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View
+              style={[styles.decorCircle, { backgroundColor: decor, opacity: 0.55 }]}
+            />
+          </>
+        )}
         <View style={styles.continuePill}>
           <Text style={styles.continueText}>
             {t("storyList.continueLabel", { current: currentPage, total: story.page_count })}
@@ -245,15 +258,27 @@ function StoryRow({
     <Card t={theme} style={styles.rowCard} onPress={onPress}>
       {/* Thumbnail */}
       <View style={styles.thumb}>
-        <LinearGradient
-          colors={tint}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          style={[styles.thumbDecor, { backgroundColor: decor, opacity: 0.55 }]}
-        />
+        {story.cover_image_url ? (
+          <Image
+            source={{ uri: story.cover_image_url }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+          />
+        ) : (
+          <>
+            <LinearGradient
+              colors={tint}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View
+              style={[styles.thumbDecor, { backgroundColor: decor, opacity: 0.55 }]}
+            />
+          </>
+        )}
       </View>
 
       {/* Info */}

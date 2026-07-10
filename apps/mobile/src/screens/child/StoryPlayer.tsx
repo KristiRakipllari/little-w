@@ -5,12 +5,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Image,
 } from "react-native";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import ScreenHeader from "@/components/ScreenHeader";
 import Btn from "@/components/Btn";
+import StoryComplete from "@/screens/child/StoryComplete";
 import { useAppStore } from "@/store/appStore";
 import { useTranslation } from "@/i18n";
 import { useStoryStore } from "@/store/storyStore";
@@ -38,6 +39,7 @@ interface Props {
 export default function StoryPlayer({ storyId, onBack }: Props) {
   const themeId = useAppStore((s) => s.themeId);
   const locale = useAppStore((s) => s.locale);
+  const audio = useAppStore((s) => s.audio);
   const lastReadStoryId = useAppStore((s) => s.lastReadStoryId);
   const lastReadPage = useAppStore((s) => s.lastReadPage);
   const setLastRead = useAppStore((s) => s.setLastRead);
@@ -54,6 +56,7 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
   const [pageIdx, setPageIdx] = useState(() =>
     lastReadStoryId === storyId ? Math.max(0, lastReadPage - 1) : 0
   );
+  const [showComplete, setShowComplete] = useState(false);
 
   useEffect(() => {
     fetchStory(storyId);
@@ -118,6 +121,19 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
     );
   }
 
+  if (showComplete) {
+    return (
+      <StoryComplete
+        storyTitle={currentStory.title}
+        onReadAgain={() => {
+          setPageIdx(0);
+          setShowComplete(false);
+        }}
+        onBackToStories={onBack}
+      />
+    );
+  }
+
   const pages = currentStory.pages;
   const page = pages[pageIdx];
   const tint = TINTS[currentStory.level] || TINTS.beginner;
@@ -141,7 +157,9 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
             <Image
               source={{ uri: page.image_url }}
               style={styles.image}
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="disk"
+              transition={200}
             />
           ) : (
             <LinearGradient
@@ -174,23 +192,27 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
 
         <View style={styles.spacer} />
 
-        {/* Audio + dots row */}
-        <View style={styles.audioRow}>
-          <TouchableOpacity
-            style={[
-              styles.playBtn,
-              { backgroundColor: theme.primary, shadowColor: theme.primaryShade },
-            ]}
-            activeOpacity={0.85}
-            accessibilityLabel={t("storyPlayer.readAloud")}
-          >
-            <Svg width={20} height={20} viewBox="0 0 20 20">
-              <Path d="M5 3v14l12-7L5 3z" fill={theme.onPrimary} />
-            </Svg>
-          </TouchableOpacity>
-          <Text style={[styles.audioLabel, { color: theme.textDark }]}>
-            {t("storyPlayer.readAloud")}
-          </Text>
+        {/* Audio + dots row (dots centered on their own when audio is off) */}
+        <View style={[styles.audioRow, !audio && styles.audioRowCentered]}>
+          {audio && (
+            <>
+              <TouchableOpacity
+                style={[
+                  styles.playBtn,
+                  { backgroundColor: theme.primary, shadowColor: theme.primaryShade },
+                ]}
+                activeOpacity={0.85}
+                accessibilityLabel={t("storyPlayer.readAloud")}
+              >
+                <Svg width={20} height={20} viewBox="0 0 20 20">
+                  <Path d="M5 3v14l12-7L5 3z" fill={theme.onPrimary} />
+                </Svg>
+              </TouchableOpacity>
+              <Text style={[styles.audioLabel, { color: theme.textDark }]}>
+                {t("storyPlayer.readAloud")}
+              </Text>
+            </>
+          )}
 
           {/* Dots */}
           <View style={styles.dots}>
@@ -238,25 +260,42 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
 
           <Btn
             t={theme}
-            disabled={isLast}
-            onPress={() => setPageIdx((p) => p + 1)}
+            onPress={() =>
+              isLast ? setShowComplete(true) : setPageIdx((p) => p + 1)
+            }
             fullWidth={false}
             style={styles.navBtn}
+            accessibilityLabel={
+              isLast ? t("storyPlayer.finish") : t("storyPlayer.next")
+            }
           >
             <View style={styles.navBtnContent}>
               <Text style={[styles.navBtnText, { color: theme.onPrimary }]}>
-                {t("storyPlayer.next")}
+                {isLast ? t("storyPlayer.finish") : t("storyPlayer.next")}
               </Text>
-              <Svg width={16} height={16} viewBox="0 0 16 16">
-                <Path
-                  d="M6 3l5 5-5 5"
-                  stroke={theme.onPrimary}
-                  strokeWidth={2.4}
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
+              {isLast ? (
+                <Svg width={16} height={16} viewBox="0 0 16 16">
+                  <Path
+                    d="M3 8.5l3.5 3.5L13 4.5"
+                    stroke={theme.onPrimary}
+                    strokeWidth={2.4}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              ) : (
+                <Svg width={16} height={16} viewBox="0 0 16 16">
+                  <Path
+                    d="M6 3l5 5-5 5"
+                    stroke={theme.onPrimary}
+                    strokeWidth={2.4}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              )}
             </View>
           </Btn>
         </View>
@@ -323,6 +362,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     marginTop: 16,
+  },
+  audioRowCentered: {
+    justifyContent: "center",
+    minHeight: 56, // keep the row's height stable so the layout doesn't shift
   },
   playBtn: {
     width: 56,

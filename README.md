@@ -270,6 +270,14 @@ Stories are categorized into 3 levels with distinct visual styling:
 
 ---
 
+## Performance
+
+- **Story list caching**: the mobile app persists the story list (Zustand `persist` middleware backed by AsyncStorage, key `@littleworld/stories`). On app open, cached stories render immediately with no loading spinner; a background refresh then updates the store silently. If the API is unreachable (offline), the cached list keeps showing without an error.
+- **5-minute refresh window**: the store tracks a `lastFetched` timestamp and skips the API call entirely while the cache is younger than 5 minutes. Level-filtered fetches (admin) always go to the API and are never cached.
+- **Image caching** (`expo-image`): full-page story illustrations in the player use `cachePolicy="disk"`; story list thumbnails use `cachePolicy="memory-disk"` so they appear instantly on revisit. Both fade in with a 200 ms transition.
+
+---
+
 ## Design Principles
 
 - COPPA-compliant (age gate, parental consent, no tracking)

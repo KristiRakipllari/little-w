@@ -103,12 +103,13 @@ function LanguageDropdown({
 
 interface Props {
   onPolicy: () => void;
+  onTerms: () => void;
   onAdmin: () => void;
   onParentArea: () => void;
   onLogin: () => void;
 }
 
-export default function SettingsScreen({ onPolicy, onAdmin, onParentArea, onLogin }: Props) {
+export default function SettingsScreen({ onPolicy, onTerms, onAdmin, onParentArea, onLogin }: Props) {
   const {
     locale,
     setLocale,
@@ -320,8 +321,7 @@ export default function SettingsScreen({ onPolicy, onAdmin, onParentArea, onLogi
           t("settings.about"),
           <>
             {settingsLink(t("settings.privacyPolicy"), onPolicy)}
-            {settingsLink(t("settings.termsOfService"), () => {})}
-            {settingsLink(t("settings.contactSupport"), () => {}, true)}
+            {settingsLink(t("settings.termsOfService"), onTerms, true)}
           </>
         )}
 

@@ -6,7 +6,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-cont
 import Svg, { Path, Circle } from "react-native-svg";
 import { TouchableOpacity, Text } from "react-native";
 
-import { useAppStore } from "@/store/appStore";
+import { useAppStore, hasValidConsent } from "@/store/appStore";
 import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/i18n";
 import { getThemeById } from "@calm-stories/shared";
@@ -15,9 +15,13 @@ import { getThemeById } from "@calm-stories/shared";
 import SplashScreen from "@/screens/child/SplashScreen";
 import LanguageScreen from "@/screens/child/LanguageScreen";
 import AgeGateScreen from "@/screens/child/AgeGateScreen";
-import PrivacyScreen from "@/screens/child/PrivacyScreen";
+import PrivacyPolicy from "@/screens/child/PrivacyPolicy";
+import TermsAndConditions from "@/screens/child/TermsAndConditions";
+import ConsentGate from "@/screens/child/ConsentGate";
 import PolicyScreen from "@/screens/child/PolicyScreen";
+import TermsScreen from "@/screens/child/TermsScreen";
 import StoryList from "@/screens/child/StoryList";
+import MoodCheckIn from "@/screens/child/MoodCheckIn";
 import StoryPlayer from "@/screens/child/StoryPlayer";
 import PaywallScreen from "@/screens/child/PaywallScreen";
 import ParentGateScreen from "@/screens/child/ParentGateScreen";
@@ -40,12 +44,14 @@ export type RootStackParamList = {
   Onboarding: undefined;
   // Main child flow
   ChildMain: undefined;
+  MoodCheckIn: { storyId: string };
   StoryPlayer: { storyId: string };
   Paywall: { storyId: string };
   ParentGate: undefined;
   GrownupGate: undefined;
   ParentDashboard: undefined;
   Policy: undefined;
+  Terms: undefined;
   // Auth
   LoginRegister: { storyId?: string };
   ForgotPassword: undefined;
@@ -145,7 +151,8 @@ function ChildMainScreen({ navigation }: any) {
 
   const handleStory = useCallback(
     (storyId: string) => {
-      navigation.navigate("StoryPlayer", { storyId });
+      // Every story open passes through the emotion check-in first.
+      navigation.navigate("MoodCheckIn", { storyId });
     },
     [navigation]
   );
@@ -165,6 +172,10 @@ function ChildMainScreen({ navigation }: any) {
     navigation.navigate("Policy");
   }, [navigation]);
 
+  const handleTerms = useCallback(() => {
+    navigation.navigate("Terms");
+  }, [navigation]);
+
   const handleAdmin = useCallback(() => {
     navigation.navigate("Login");
   }, [navigation]);
@@ -181,6 +192,7 @@ function ChildMainScreen({ navigation }: any) {
         ) : (
           <SettingsScreen
             onPolicy={handlePolicy}
+            onTerms={handleTerms}
             onAdmin={handleAdmin}
             onParentArea={handleParentArea}
             onLogin={handleSettingsLogin}
@@ -193,13 +205,10 @@ function ChildMainScreen({ navigation }: any) {
 }
 
 // ── Onboarding Flow ──────────────────────────
-function OnboardingScreen({ navigation }: any) {
-  const [step, setStep] = useState<"splash" | "language" | "age" | "privacy">("splash");
-  const { setAgreed } = useAppStore();
-
-  const goPolicy = useCallback(() => {
-    navigation.navigate("Policy");
-  }, [navigation]);
+function OnboardingScreen() {
+  const [step, setStep] = useState<
+    "splash" | "language" | "age" | "privacy" | "terms" | "consent"
+  >("splash");
 
   switch (step) {
     case "splash":
@@ -210,12 +219,25 @@ function OnboardingScreen({ navigation }: any) {
       return <AgeGateScreen onContinue={() => setStep("privacy")} />;
     case "privacy":
       return (
-        <PrivacyScreen
+        <PrivacyPolicy
           onBack={() => setStep("age")}
-          onPolicy={goPolicy}
-          onAgree={() => {
-            setAgreed(true);
-          }}
+          onContinue={() => setStep("terms")}
+        />
+      );
+    case "terms":
+      return (
+        <TermsAndConditions
+          onBack={() => setStep("privacy")}
+          onContinue={() => setStep("consent")}
+        />
+      );
+    case "consent":
+      return (
+        <ConsentGate
+          onBack={() => setStep("terms")}
+          // acceptConsent (called inside ConsentGate) flips the launch gate,
+          // which swaps this whole stack over to the main app.
+          onConfirm={() => {}}
         />
       );
   }
@@ -223,7 +245,7 @@ function OnboardingScreen({ navigation }: any) {
 
 // ── Root Navigator ───────────────────────────
 export default function Navigator() {
-  const agreed = useAppStore((s) => s.agreed);
+  const consentData = useAppStore((s) => s.consentData);
   const { user, mode } = useAuthStore();
 
   return (
@@ -244,7 +266,7 @@ export default function Navigator() {
                 options={{ headerShown: true, title: "Edit Pages" }}
               />
             </>
-          ) : !agreed ? (
+          ) : !hasValidConsent(consentData) ? (
             <>
               <Stack.Screen name="Onboarding" component={OnboardingScreen} />
               <Stack.Screen
@@ -256,6 +278,11 @@ export default function Navigator() {
           ) : (
             <>
               <Stack.Screen name="ChildMain" component={ChildMainScreen} />
+              <Stack.Screen
+                name="MoodCheckIn"
+                component={MoodCheckInWrapper}
+                options={{ presentation: "card" }}
+              />
               <Stack.Screen
                 name="StoryPlayer"
                 component={StoryPlayerWrapper}
@@ -274,6 +301,11 @@ export default function Navigator() {
               <Stack.Screen
                 name="Policy"
                 component={PolicyWrapper}
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen
+                name="Terms"
+                component={TermsWrapper}
                 options={{ presentation: "modal" }}
               />
               <Stack.Screen
@@ -311,6 +343,18 @@ export default function Navigator() {
 
 // ── Wrapper components ──────────────────────
 
+function MoodCheckInWrapper({ route, navigation }: any) {
+  const storyId = route.params.storyId;
+  return (
+    <MoodCheckIn
+      storyId={storyId}
+      onBack={() => navigation.goBack()}
+      // Replace so Back from the player returns home, not to the check-in.
+      onStart={() => navigation.replace("StoryPlayer", { storyId })}
+    />
+  );
+}
+
 function StoryPlayerWrapper({ route, navigation }: any) {
   return (
     <StoryPlayer
@@ -337,6 +381,10 @@ function ParentGateWrapper({ navigation }: any) {
 
 function PolicyWrapper({ navigation }: any) {
   return <PolicyScreen onBack={() => navigation.goBack()} />;
+}
+
+function TermsWrapper({ navigation }: any) {
+  return <TermsScreen onBack={() => navigation.goBack()} />;
 }
 
 function GrownupGateWrapper({ navigation }: any) {
@@ -373,7 +421,7 @@ function LoginRegisterWrapper({ route, navigation }: any) {
           // Coming from a premium story tap
           const { isSubscribed } = useAuthStore.getState();
           if (isSubscribed) {
-            navigation.replace("StoryPlayer", { storyId });
+            navigation.replace("MoodCheckIn", { storyId });
           } else {
             navigation.replace("Paywall", { storyId });
           }
