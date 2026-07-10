@@ -356,7 +356,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     marginTop: 2,
   },
-  listContent: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
+  // Extra bottom padding so the last card clears the floating tab bar.
+  listContent: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 120 },
 
   // Section header
   sectionHeader: {

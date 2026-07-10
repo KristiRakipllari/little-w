@@ -395,7 +395,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 16,
+    // Clears the floating tab bar.
+    paddingBottom: 120,
   },
   section: { marginBottom: 22 },
   sectionTitle: {

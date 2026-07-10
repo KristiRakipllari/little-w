@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Platform } from "react-native";
+import { BlurView } from "expo-blur";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -106,17 +107,8 @@ function TabBar({
     );
   };
 
-  return (
-    <View
-      style={[
-        styles.tabBar,
-        {
-          backgroundColor: theme.surface,
-          borderTopColor: theme.border,
-          paddingBottom: Math.max(insets.bottom, 16),
-        },
-      ]}
-    >
+  const tabs = (
+    <>
       {tab("home", t("tabs.stories"), (c) => (
         <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
           <Path
@@ -138,6 +130,40 @@ function TabBar({
           />
         </Svg>
       ))}
+    </>
+  );
+
+  // iOS 17+ style: a floating translucent pill detached from the screen edge,
+  // with content scrolling underneath. Blur is iOS-only; Android/web get a
+  // near-opaque surface instead.
+  return (
+    <View
+      pointerEvents="box-none"
+      style={[styles.tabBarWrap, { bottom: Math.max(insets.bottom, 12) + 8 }]}
+    >
+      <View style={[styles.tabBarShadow, { shadowColor: theme.textDark }]}>
+        {Platform.OS === "ios" ? (
+          <BlurView
+            intensity={60}
+            tint="light"
+            style={[
+              styles.tabBar,
+              { backgroundColor: `${theme.surface}B3`, borderColor: theme.border },
+            ]}
+          >
+            {tabs}
+          </BlurView>
+        ) : (
+          <View
+            style={[
+              styles.tabBar,
+              { backgroundColor: `${theme.surface}F5`, borderColor: theme.border },
+            ]}
+          >
+            {tabs}
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -455,14 +481,31 @@ function AdminLoginWrapper({ navigation }: any) {
 // ── Styles ───────────────────────────────────
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  tabBarWrap: {
+    position: "absolute",
+    left: 24,
+    right: 24,
+  },
+  tabBarShadow: {
+    borderRadius: 32,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    elevation: 10,
+  },
   tabBar: {
-    height: 76,
-    borderTopWidth: 1,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
     flexDirection: "row",
     alignItems: "stretch",
+    justifyContent: "center",
+    gap: 24,
+    overflow: "hidden",
   },
   tab: {
-    flex: 1,
+    width: 108,
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
