@@ -26,13 +26,17 @@ export default function Segment({ value, onChange, options, t }: Props) {
               selected && [
                 styles.optionSelected,
                 {
-                  backgroundColor: t.surface,
-                  shadowColor: t.textDark,
+                  backgroundColor: t.primary,
+                  shadowColor: t.primaryShade,
                 },
               ],
             ]}
           >
-            <Text style={[styles.label, { color: t.textDark }]}>{label}</Text>
+            <Text
+              style={[styles.label, { color: selected ? t.onPrimary : t.textDark }]}
+            >
+              {label}
+            </Text>
           </TouchableOpacity>
         );
       })}

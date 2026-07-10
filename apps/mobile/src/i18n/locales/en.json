@@ -99,7 +99,10 @@
     "storyCount": "{{count}} story",
     "storyCountPlural": "{{count}} stories",
     "premium": "Premium",
-    "emptyText": "No stories yet. Check back soon!"
+    "emptyText": "No stories yet. Check back soon!",
+    "favorites": "Favourites",
+    "addFavorite": "Add to favourites",
+    "removeFavorite": "Remove from favourites"
   },
 
   "storyPlayer": {

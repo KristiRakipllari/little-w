@@ -99,7 +99,10 @@
     "storyCount": "{{count}} tregim",
     "storyCountPlural": "{{count}} tregime",
     "premium": "Premium",
-    "emptyText": "Asnj\u00eb tregim ende. Kthehuni s\u00eb shpejti!"
+    "emptyText": "Asnj\u00eb tregim ende. Kthehuni s\u00eb shpejti!",
+    "favorites": "T\u00eb preferuarat",
+    "addFavorite": "Shto te t\u00eb preferuarat",
+    "removeFavorite": "Hiq nga t\u00eb preferuarat"
   },
 
   "storyPlayer": {

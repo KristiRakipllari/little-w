@@ -5,15 +5,24 @@ import {
   SectionList,
   StyleSheet,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+} from "react-native-reanimated";
 import Svg, { Rect, Path } from "react-native-svg";
 import Card from "@/components/Card";
 import { useAppStore } from "@/store/appStore";
 import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/i18n";
 import { useStoryStore } from "@/store/storyStore";
+import { useFavoritesStore } from "@/store/favoritesStore";
 import {
   getThemeById,
   DIFFICULTY_LABELS,
@@ -39,20 +48,28 @@ interface Props {
   onPaywall: (storyId: string) => void;
 }
 
+// A story row inside the Favourites section gets a marker so it can share the
+// list with its difficulty-section twin without colliding on React keys.
+type Row = Story & { __fav?: boolean };
+
 export default function StoryList({ onStory, onPaywall }: Props) {
   const themeId = useAppStore((s) => s.themeId);
+  const motion = useAppStore((s) => s.motion);
   const lastReadStoryId = useAppStore((s) => s.lastReadStoryId);
   const lastReadPage = useAppStore((s) => s.lastReadPage);
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
   const { stories, isLoading, fetchStories } = useStoryStore();
   const { user, isSubscribed } = useAuthStore();
+  const favoriteIds = useFavoritesStore((s) => s.favoriteIds);
+  const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
 
   useEffect(() => {
     fetchStories();
   }, []);
 
-  // Group stories into sections by difficulty level
+  // Group stories into sections by difficulty level, with a Favourites
+  // section pinned on top whenever at least one story is favourited.
   const sections = useMemo(() => {
     const groups: Record<string, Story[]> = {};
     for (const level of DIFFICULTY_LEVELS) {
@@ -61,14 +78,29 @@ export default function StoryList({ onStory, onPaywall }: Props) {
     for (const s of stories) {
       if (groups[s.level]) groups[s.level].push(s);
     }
-    return DIFFICULTY_LEVELS.filter((lvl) => groups[lvl].length > 0).map(
+    const result: {
+      level: DifficultyLevel | "favorites";
+      title: string;
+      data: Row[];
+    }[] = DIFFICULTY_LEVELS.filter((lvl) => groups[lvl].length > 0).map(
       (lvl) => ({
         level: lvl as DifficultyLevel,
         title: DIFFICULTY_LABELS[lvl],
         data: groups[lvl],
       })
     );
-  }, [stories]);
+    const favorites = stories
+      .filter((s) => favoriteIds.includes(s.id))
+      .map((s): Row => ({ ...s, __fav: true }));
+    if (favorites.length > 0) {
+      result.unshift({
+        level: "favorites",
+        title: t("storyList.favorites"),
+        data: favorites,
+      });
+    }
+    return result;
+  }, [stories, favoriteIds, t]);
 
   const handlePress = (s: Story) => {
     if (!s.is_premium) {
@@ -112,7 +144,7 @@ export default function StoryList({ onStory, onPaywall }: Props) {
 
       <SectionList
         sections={sections}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: Row) => (item.__fav ? `fav-${item.id}` : item.id)}
         stickySectionHeadersEnabled={false}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
@@ -124,6 +156,8 @@ export default function StoryList({ onStory, onPaywall }: Props) {
               theme={theme}
               t={t}
               onPress={() => handlePress(featured)}
+              isFavorite={favoriteIds.includes(featured.id)}
+              onToggleFavorite={() => toggleFavorite(featured.id)}
             />
           ) : null
         }
@@ -136,12 +170,23 @@ export default function StoryList({ onStory, onPaywall }: Props) {
         }
         renderSectionHeader={({ section }) => {
           const count = section.data.length;
+          // The Favourites section fades in gently when it first appears —
+          // sudden layout shifts can be startling for autistic children.
+          const entering =
+            section.level === "favorites" && motion !== "off"
+              ? FadeIn.duration(motion === "slow" ? 400 : 200)
+              : undefined;
           return (
-            <View style={styles.sectionHeader}>
+            <Animated.View entering={entering} style={styles.sectionHeader}>
               <View
                 style={[
                   styles.levelDot,
-                  { backgroundColor: DECOR_COLORS[section.level] || theme.primary },
+                  {
+                    backgroundColor:
+                      section.level === "favorites"
+                        ? theme.accent
+                        : DECOR_COLORS[section.level] || theme.primary,
+                  },
                 ]}
               />
               <Text style={[styles.sectionTitle, { color: theme.textLight }]}>
@@ -152,14 +197,88 @@ export default function StoryList({ onStory, onPaywall }: Props) {
                   ? t("storyList.storyCount", { count })
                   : t("storyList.storyCountPlural", { count })}
               </Text>
-            </View>
+            </Animated.View>
           );
         }}
         renderItem={({ item }) => (
-          <StoryRow story={item} theme={theme} t={t} onPress={() => handlePress(item)} />
+          <Animated.View
+            entering={
+              item.__fav && motion !== "off"
+                ? FadeIn.duration(motion === "slow" ? 400 : 200)
+                : undefined
+            }
+          >
+            <StoryRow
+              story={item}
+              theme={theme}
+              t={t}
+              onPress={() => handlePress(item)}
+              isFavorite={favoriteIds.includes(item.id)}
+              onToggleFavorite={() => toggleFavorite(item.id)}
+            />
+          </Animated.View>
         )}
       />
     </View>
+  );
+}
+
+// ── Heart / favourite button ─────────────────
+
+function HeartButton({
+  active,
+  onPress,
+  theme,
+  t,
+}: {
+  active: boolean;
+  onPress: () => void;
+  theme: ReturnType<typeof getThemeById>;
+  t: (key: string, options?: Record<string, any>) => string;
+}) {
+  const motion = useAppStore((s) => s.motion);
+  const scale = useSharedValue(1);
+  const beatStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePress = () => {
+    // One soft heartbeat when favouriting only — unfavouriting stays quiet
+    // on purpose (positive reinforcement goes in one direction).
+    if (!active && motion !== "off") {
+      const stiffness = motion === "slow" ? 160 : 420;
+      scale.value = withSequence(
+        withSpring(1.3, { damping: 16, stiffness }),
+        withSpring(1, { damping: 13, stiffness: stiffness * 0.7 })
+      );
+    }
+    onPress();
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={
+        active ? t("storyList.removeFavorite") : t("storyList.addFavorite")
+      }
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      style={styles.heartBtn}
+    >
+      <Animated.View style={beatStyle}>
+        <Svg width={16} height={16} viewBox="0 0 24 24">
+          <Path
+            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+            fill={active ? theme.accent : "none"}
+            stroke={active ? theme.accent : theme.textLight}
+            strokeWidth={2}
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </Animated.View>
+    </TouchableOpacity>
   );
 }
 
@@ -171,12 +290,16 @@ function FeaturedCard({
   theme,
   t,
   onPress,
+  isFavorite,
+  onToggleFavorite,
 }: {
   story: Story;
   currentPage: number;
   theme: ReturnType<typeof getThemeById>;
   t: (key: string, options?: Record<string, any>) => string;
   onPress: () => void;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 }) {
   const tint = TINTS[story.level] || TINTS.beginner;
   const decor = DECOR_COLORS[story.level] || "#FFB347";
@@ -210,6 +333,14 @@ function FeaturedCard({
           <Text style={styles.continueText}>
             {t("storyList.continueLabel", { current: currentPage, total: story.page_count })}
           </Text>
+        </View>
+        <View style={styles.featuredHeart}>
+          <HeartButton
+            active={isFavorite}
+            onPress={onToggleFavorite}
+            theme={theme}
+            t={t}
+          />
         </View>
       </View>
       <View style={styles.featuredBody}>
@@ -245,11 +376,15 @@ function StoryRow({
   theme,
   t,
   onPress,
+  isFavorite,
+  onToggleFavorite,
 }: {
   story: Story;
   theme: ReturnType<typeof getThemeById>;
   t: (key: string, options?: Record<string, any>) => string;
   onPress: () => void;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 }) {
   const tint = TINTS[story.level] || TINTS.beginner;
   const decor = DECOR_COLORS[story.level] || "#FFB347";
@@ -321,6 +456,13 @@ function StoryRow({
           </View>
         )}
       </View>
+
+      <HeartButton
+        active={isFavorite}
+        onPress={onToggleFavorite}
+        theme={theme}
+        t={t}
+      />
 
       {/* Chevron */}
       <Svg width={10} height={16} viewBox="0 0 10 16">
@@ -453,6 +595,21 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
   },
+  // Heart / favourite button
+  heartBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.85)",
+  },
+  featuredHeart: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+  },
+
   rowInfo: { flex: 1, minWidth: 0 },
   rowTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   lockIcon: { flexShrink: 0 },
