@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { query, queryOne } from "@calm-stories/db";
-import { requireAuth } from "@/app/lib/auth";
-import { success, created, error, notFound, unauthorized, serverError } from "@/app/lib/response";
+import { getAuthUser, requireStaff, hasActiveEntitlement } from "@/app/lib/auth";
+import { success, created, error, notFound, unauthorized, forbidden, serverError } from "@/app/lib/response";
 import type { StoryPage, CreatePageRequest } from "@calm-stories/shared";
 
 interface Params {
@@ -11,8 +11,24 @@ interface Params {
 // GET /api/stories/:id/pages — list pages
 export async function GET(req: NextRequest, { params }: Params) {
   try {
-    const story = await queryOne("SELECT id FROM stories WHERE id = $1", [params.id]);
+    const user = await getAuthUser(req);
+    const isStaff = user?.role === "admin" || user?.role === "editor";
+
+    const story = await queryOne<{
+      id: string;
+      is_premium: boolean;
+      is_published: boolean;
+    }>("SELECT id, is_premium, is_published FROM stories WHERE id = $1", [
+      params.id,
+    ]);
     if (!story) return notFound("Story not found");
+
+    // Same access rules as GET /api/stories/:id — this route serves the
+    // identical content, so it must not be a side door.
+    if (!story.is_published && !isStaff) return notFound("Story not found");
+    if (story.is_premium && !isStaff && !hasActiveEntitlement(user)) {
+      return forbidden("Premium subscription required");
+    }
 
     const pages = await query<StoryPage>(
       "SELECT * FROM story_pages WHERE story_id = $1 ORDER BY page_number ASC",
@@ -29,7 +45,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 export async function POST(req: NextRequest, { params }: Params) {
   try {
     try {
-      await requireAuth(req);
+      await requireStaff(req);
     } catch {
       return unauthorized();
     }

@@ -1,12 +1,20 @@
 // ─── User / Auth ─────────────────────────────
 
-export type UserRole = "admin" | "editor";
+export type UserRole = "admin" | "editor" | "parent";
 
 export interface User {
   id: string;
   email: string;
   name: string;
   role: UserRole;
+  // Server-tracked: true once the account's 7-day free week is consumed.
+  // Survives reinstalls / cleared app data, unlike any client-side flag.
+  trial_used: boolean;
+  // Server-side subscription state, kept in sync by the RevenueCat webhook.
+  // Access is valid while entitlement is set and expires_at is null/future.
+  entitlement?: string | null;
+  entitlement_expires_at?: string | null;
+  entitlement_store?: string | null;
   created_at: string;
   updated_at: string;
 }

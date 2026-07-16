@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { queryOne } from "@calm-stories/db";
-import { hashPassword, verifyPassword, signToken } from "@/app/lib/auth";
+import { hashPassword, verifyPassword, isLegacyHash, signToken } from "@/app/lib/auth";
 import { success, error, serverError } from "@/app/lib/response";
 import type { User, LoginRequest } from "@calm-stories/shared";
 
@@ -17,8 +17,31 @@ export async function POST(req: NextRequest) {
       [body.email.toLowerCase()]
     );
 
-    if (!user || !verifyPassword(body.password, user.password_hash)) {
+    if (!user || !(await verifyPassword(body.password, user.password_hash))) {
       return error("Invalid email or password", 401);
+    }
+
+    // Migrate-on-login: silently upgrade pre-bcrypt (SHA-256) hashes now
+    // that we hold the verified plaintext. Users notice nothing.
+    if (isLegacyHash(user.password_hash)) {
+      const upgraded = await hashPassword(body.password);
+      await queryOne("UPDATE users SET password_hash = $1 WHERE id = $2", [
+        upgraded,
+        user.id,
+      ]);
+    }
+
+    // The free week is the account's first 7 days (the lifetime of its first
+    // JWT). Persisting consumption here makes it survive reinstalls and
+    // cleared app data — the client re-learns it on every login.
+    if (!user.trial_used) {
+      const consumed = await queryOne<{ trial_used: boolean }>(
+        `UPDATE users SET trial_used = true
+         WHERE id = $1 AND created_at + INTERVAL '7 days' < NOW()
+         RETURNING trial_used`,
+        [user.id]
+      );
+      if (consumed) user.trial_used = true;
     }
 
     const { password_hash, ...safeUser } = user;

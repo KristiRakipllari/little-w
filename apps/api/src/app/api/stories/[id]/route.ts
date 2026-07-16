@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { query, queryOne } from "@calm-stories/db";
-import { requireAuth } from "@/app/lib/auth";
-import { success, error, notFound, unauthorized, serverError } from "@/app/lib/response";
+import { getAuthUser, requireStaff, hasActiveEntitlement } from "@/app/lib/auth";
+import { success, error, notFound, unauthorized, forbidden, serverError } from "@/app/lib/response";
 import type { Story, StoryWithPages, StoryPage, UpdateStoryRequest } from "@calm-stories/shared";
 
 interface Params {
@@ -11,6 +11,9 @@ interface Params {
 // GET /api/stories/:id — get story with pages
 export async function GET(req: NextRequest, { params }: Params) {
   try {
+    const user = await getAuthUser(req);
+    const isStaff = user?.role === "admin" || user?.role === "editor";
+
     const story = await queryOne<Story>(
       `SELECT s.*,
         (SELECT COUNT(*) FROM story_pages WHERE story_id = s.id)::int AS page_count
@@ -19,6 +22,15 @@ export async function GET(req: NextRequest, { params }: Params) {
     );
 
     if (!story) return notFound("Story not found");
+
+    // Drafts are staff-only; a 404 avoids confirming the story exists.
+    if (!story.is_published && !isStaff) return notFound("Story not found");
+
+    // Premium content needs an active server-side entitlement (synced from
+    // RevenueCat by webhook) — the client-side check alone is spoofable.
+    if (story.is_premium && !isStaff && !hasActiveEntitlement(user)) {
+      return forbidden("Premium subscription required");
+    }
 
     const pages = await query<StoryPage>(
       "SELECT * FROM story_pages WHERE story_id = $1 ORDER BY page_number ASC",
@@ -35,7 +47,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
     try {
-      await requireAuth(req);
+      await requireStaff(req);
     } catch {
       return unauthorized();
     }
@@ -95,7 +107,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 export async function DELETE(req: NextRequest, { params }: Params) {
   try {
     try {
-      await requireAuth(req);
+      await requireStaff(req);
     } catch {
       return unauthorized();
     }

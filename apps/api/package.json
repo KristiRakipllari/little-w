@@ -12,6 +12,7 @@
     "@calm-stories/db": "*",
     "@calm-stories/shared": "*",
     "@supabase/supabase-js": "^2.42.0",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.2",
     "next": "^14.2.0",

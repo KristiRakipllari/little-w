@@ -394,7 +394,14 @@ function PaywallWrapper({ route, navigation }: any) {
   const storyId = route.params?.storyId;
   return (
     <PaywallScreen
-      onStartTrial={() => navigation.navigate("ParentGate")}
+      onPurchased={() => {
+        // Premium is active — open the story they tapped, or return.
+        if (storyId) {
+          navigation.replace("MoodCheckIn", { storyId });
+        } else {
+          navigation.goBack();
+        }
+      }}
       onLogin={() => navigation.navigate("LoginRegister", { storyId })}
       onClose={() => navigation.goBack()}
     />
@@ -471,7 +478,14 @@ function AdminLoginWrapper({ navigation }: any) {
     <Login
       onBack={() => navigation.goBack()}
       onSuccess={() => {
-        setMode("admin");
+        // Only staff accounts may enter admin mode; a parent logging in
+        // here just ends up signed in and returns to the child app.
+        const { user } = useAuthStore.getState();
+        if (user && (user.role === "admin" || user.role === "editor")) {
+          setMode("admin");
+        } else {
+          navigation.goBack();
+        }
       }}
       onForgotPassword={() => navigation.navigate("ForgotPassword")}
     />

@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { PREMIUM_ENTITLEMENT_ID } from "@calm-stories/shared";
 
 // Physical devices use LAN IP, web/simulators use localhost
 // Update this IP to match your computer's local network address (ipconfig)
@@ -12,5 +13,14 @@ export const CONFIG = {
     AUTH_TOKEN: "calm_auth_token",
     USER_DATA: "calm_user_data",
     APP_MODE: "calm_app_mode",
+  },
+  REVENUECAT: {
+    // Test Store key — swap for the platform keys (appl_… / goog_…) before
+    // shipping. SDK API keys are publishable, not secrets.
+    API_KEY: "test_frcoeUgNpVIEJYQaVDGJBtOtXft",
+    ENTITLEMENT_ID: PREMIUM_ENTITLEMENT_ID,
+    // Offering/package identifiers as configured in the RevenueCat dashboard
+    OFFERING_ID: "default",
+    MONTHLY_PACKAGE_ID: "monthly",
   },
 } as const;

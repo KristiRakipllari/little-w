@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,13 @@ import ScreenHeader from "@/components/ScreenHeader";
 import Card from "@/components/Card";
 import Btn from "@/components/Btn";
 import { useAppStore } from "@/store/appStore";
+import { useAuthStore } from "@/store/authStore";
+import {
+  restorePurchases,
+  presentCustomerCenter,
+  hasPremium,
+  getMonthlyPriceString,
+} from "@/services/purchases";
 import { useReadingStatsStore, computeDashboard } from "@/store/readingStatsStore";
 import { useMoodStore, computeMoodSummary } from "@/store/moodStore";
 import { MoodFace, MOOD_ORDER, MOOD_STYLES } from "@/components/MoodFace";
@@ -68,7 +75,19 @@ export default function ParentDashboardScreen({
 
   const dayLetters = DAY_LETTERS[locale] || DAY_LETTERS.en;
   const dayLabels = d.weekDates.map((date) => dayLetters[date.getDay()]);
-  const price = SUBSCRIPTION_PRICE.toFixed(2);
+
+  // Store-localized price when available; shared constant as fallback.
+  const [price, setPrice] = useState(`$${SUBSCRIPTION_PRICE.toFixed(2)}`);
+  useEffect(() => {
+    let mounted = true;
+    getMonthlyPriceString().then((p) => {
+      if (mounted && p) setPrice(p);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const plan = subscribed
     ? t("parentDashboard.planPremium", { price })
     : t("parentDashboard.planFree");
@@ -77,12 +96,17 @@ export default function ParentDashboardScreen({
   // Rendered as an in-app Modal (not Alert.alert, which is a no-op on web)
   const [dialog, setDialog] = useState<DialogState>(null);
 
-  const openStoreSubscriptions = () => {
-    Linking.openURL(STORE_SUBSCRIPTIONS_URL).catch(() => {});
+  // RevenueCat Customer Center handles cancel/refund/plan changes in-app;
+  // the store subscriptions page is the fallback (web, or center not set up).
+  const openManageSubscriptions = async () => {
+    const shown = await presentCustomerCenter();
+    if (!shown) {
+      Linking.openURL(STORE_SUBSCRIPTIONS_URL).catch(() => {});
+    }
   };
 
-  // Extra confirmation before sending the parent to the store's cancel page,
-  // spelling out that paid-for access continues until the period ends
+  // Extra confirmation before opening the cancellation flow, spelling out
+  // that paid-for access continues until the period ends
   const confirmCancel = () => {
     setDialog({
       title: t("parentDashboard.confirmCancelTitle"),
@@ -91,7 +115,7 @@ export default function ParentDashboardScreen({
         {
           label: t("parentDashboard.confirmCancelYes"),
           destructive: true,
-          onPress: openStoreSubscriptions,
+          onPress: openManageSubscriptions,
         },
         { label: t("parentDashboard.keepSub") },
       ],
@@ -124,11 +148,22 @@ export default function ParentDashboardScreen({
     }
   };
 
-  // TODO: call the store restore API (RevenueCat) once real billing is live
-  const handleRestore = () => {
+  const refreshSubscription = useAuthStore((s) => s.refreshSubscription);
+
+  const handleRestore = async () => {
+    const result = await restorePurchases();
+    let message: string;
+    if (result.errorMessage) {
+      message = t("parentDashboard.restoreMsg");
+    } else if (hasPremium(result.customerInfo)) {
+      await refreshSubscription();
+      message = t("parentDashboard.restoreSuccess");
+    } else {
+      message = t("parentDashboard.restoreNone");
+    }
     setDialog({
       title: t("parentDashboard.restorePurchases"),
-      message: t("parentDashboard.restoreMsg"),
+      message,
       actions: [{ label: t("parentDashboard.close") }],
     });
   };
@@ -385,7 +420,7 @@ export default function ParentDashboardScreen({
             t={theme}
             label={t("parentDashboard.manageAppStore")}
             external
-            onPress={openStoreSubscriptions}
+            onPress={openManageSubscriptions}
           />
           <DashRow
             t={theme}

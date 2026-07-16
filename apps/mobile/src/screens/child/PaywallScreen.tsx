@@ -1,25 +1,80 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, Modal } from "react-native";
 import Svg, { Rect, Path } from "react-native-svg";
 import ScreenHeader from "@/components/ScreenHeader";
+import GrownupGateScreen from "@/screens/child/GrownupGateScreen";
 import Btn from "@/components/Btn";
 import Card from "@/components/Card";
 import { useAppStore } from "@/store/appStore";
 import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/i18n";
-import { getThemeById, SUBSCRIPTION_PRICE } from "@calm-stories/shared";
+import { getThemeById, SUBSCRIPTION_PRICE, COLORS } from "@calm-stories/shared";
+import {
+  presentPaywall,
+  purchaseMonthly,
+  hasPremium,
+  getMonthlyPriceString,
+} from "@/services/purchases";
 
 interface Props {
-  onStartTrial: () => void;
+  onPurchased: () => void;
   onLogin: () => void;
   onClose: () => void;
 }
 
-export default function PaywallScreen({ onStartTrial, onLogin, onClose }: Props) {
+export default function PaywallScreen({ onPurchased, onLogin, onClose }: Props) {
   const themeId = useAppStore((s) => s.themeId);
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
-  const { user } = useAuthStore();
+  const { user, trialUsed, refreshSubscription } = useAuthStore();
+  const [purchasing, setPurchasing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  // The paywall is reachable from child mode, and our terms promise that
+  // subscribing sits behind a parental gate — so the math gate must be
+  // passed before any purchase UI opens.
+  const [gateVisible, setGateVisible] = useState(false);
+
+  // Store-localized price when available; shared constant as fallback.
+  const [price, setPrice] = useState(`$${SUBSCRIPTION_PRICE.toFixed(2)}`);
+  useEffect(() => {
+    let mounted = true;
+    getMonthlyPriceString().then((p) => {
+      if (mounted && p) setPrice(p);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Preferred path: the remote RevenueCat Paywall (edited in the dashboard,
+  // handles intro-offer eligibility and restore itself). If none is
+  // configured we fall back to buying the monthly package directly.
+  const handlePurchase = async () => {
+    setPurchasing(true);
+    setPurchaseError(null);
+    try {
+      const outcome = await presentPaywall();
+      if (outcome === "purchased" || outcome === "restored") {
+        await refreshSubscription();
+        onPurchased();
+        return;
+      }
+      if (outcome === "unavailable") {
+        const result = await purchaseMonthly();
+        if (hasPremium(result.customerInfo)) {
+          await refreshSubscription();
+          onPurchased();
+          return;
+        }
+        if (!result.cancelled) {
+          setPurchaseError(t("paywall.purchaseFailed"));
+        }
+      }
+      // "cancelled" — the user changed their mind; no error to show.
+    } finally {
+      setPurchasing(false);
+    }
+  };
 
   const BENEFITS = [
     { icon: "\uD83D\uDCDA", label: t("paywall.benefitStoriesLabel"), desc: t("paywall.benefitStoriesDesc") },
@@ -76,24 +131,36 @@ export default function PaywallScreen({ onStartTrial, onLogin, onClose }: Props)
           ))}
         </Card>
 
-        {/* Pricing */}
+        {/* Pricing — once the free week is consumed, drop the trial copy */}
         <View style={styles.pricing}>
-          <Text style={[styles.pricingLabel, { color: theme.textLight }]}>
-            {t("paywall.pricingThen")}
-          </Text>
+          {!trialUsed && (
+            <Text style={[styles.pricingLabel, { color: theme.textLight }]}>
+              {t("paywall.pricingThen")}
+            </Text>
+          )}
           <Text style={[styles.pricingAmount, { color: theme.textDark }]}>
-            {t("paywall.pricingAmount", { price: SUBSCRIPTION_PRICE.toFixed(2) })}
+            {t("paywall.pricingAmount", { price })}
           </Text>
           <Text style={[styles.pricingNote, { color: theme.textLight }]}>
-            {t("paywall.pricingNote")}
+            {trialUsed ? t("paywall.pricingNoteNoTrial") : t("paywall.pricingNote")}
           </Text>
         </View>
 
         <View style={styles.spacer} />
 
+        {purchaseError && (
+          <Text style={[styles.errorText, { color: COLORS.admin.danger }]}>
+            {purchaseError}
+          </Text>
+        )}
+
         {user ? (
-          <Btn t={theme} onPress={onStartTrial}>
-            {t("paywall.startTrial")}
+          <Btn t={theme} disabled={purchasing} onPress={() => setGateVisible(true)}>
+            {purchasing
+              ? t("paywall.processing")
+              : trialUsed
+                ? t("paywall.getPremium")
+                : t("paywall.startTrial")}
           </Btn>
         ) : (
           <Btn t={theme} onPress={onLogin}>
@@ -105,6 +172,20 @@ export default function PaywallScreen({ onStartTrial, onLogin, onClose }: Props)
           {t("paywall.maybeLater")}
         </Btn>
       </ScrollView>
+
+      <Modal
+        visible={gateVisible}
+        animationType="slide"
+        onRequestClose={() => setGateVisible(false)}
+      >
+        <GrownupGateScreen
+          onBack={() => setGateVisible(false)}
+          onPass={() => {
+            setGateVisible(false);
+            handlePurchase();
+          }}
+        />
+      </Modal>
     </View>
   );
 }
@@ -162,4 +243,10 @@ const styles = StyleSheet.create({
   pricingNote: { fontSize: 13, fontWeight: "600", marginTop: 2 },
   spacer: { flex: 1, minHeight: 16 },
   gap: { height: 8 },
+  errorText: {
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 10,
+  },
 });

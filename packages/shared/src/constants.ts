@@ -13,6 +13,10 @@ export const FREE_TRIAL_DAYS = 7;
 export const SUBSCRIPTION_PRICE = 2.99;
 export const SUPPORT_EMAIL = "hello@littleworld.app";
 
+// RevenueCat entitlement identifier — must match the dashboard exactly.
+// Used by the mobile SDK checks and the API webhook alike.
+export const PREMIUM_ENTITLEMENT_ID = "Little World Premium";
+
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: "/api/auth/login",

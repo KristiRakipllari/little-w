@@ -1,9 +1,9 @@
 import { pool, query } from "./connection";
-import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
-// Simple password hash (in production, use bcrypt — this is for seeding only)
+// Same bcrypt hashing the API uses (sync is fine in a CLI script)
 function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password).digest("hex");
+  return bcrypt.hashSync(password, 10);
 }
 
 interface SeedPage {

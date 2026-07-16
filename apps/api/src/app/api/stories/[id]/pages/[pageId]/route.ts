@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { queryOne } from "@calm-stories/db";
-import { requireAuth } from "@/app/lib/auth";
+import { requireStaff } from "@/app/lib/auth";
 import { success, error, notFound, unauthorized, serverError } from "@/app/lib/response";
 import type { StoryPage, UpdatePageRequest } from "@calm-stories/shared";
 
@@ -12,7 +12,7 @@ interface Params {
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
     try {
-      await requireAuth(req);
+      await requireStaff(req);
     } catch {
       return unauthorized();
     }
@@ -70,7 +70,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 export async function DELETE(req: NextRequest, { params }: Params) {
   try {
     try {
-      await requireAuth(req);
+      await requireStaff(req);
     } catch {
       return unauthorized();
     }

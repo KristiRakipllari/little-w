@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { query, queryOne } from "@calm-stories/db";
-import { getAuthUser, requireAuth } from "@/app/lib/auth";
+import { getAuthUser, requireStaff } from "@/app/lib/auth";
 import { success, created, error, unauthorized, serverError } from "@/app/lib/response";
 import type { Story, CreateStoryRequest } from "@calm-stories/shared";
 
@@ -8,6 +8,7 @@ import type { Story, CreateStoryRequest } from "@calm-stories/shared";
 export async function GET(req: NextRequest) {
   try {
     const user = await getAuthUser(req);
+    const isStaff = user?.role === "admin" || user?.role === "editor";
     const { searchParams } = new URL(req.url);
     const level = searchParams.get("level");
     const published = searchParams.get("published");
@@ -20,12 +21,10 @@ export async function GET(req: NextRequest) {
     const params: any[] = [];
     const conditions: string[] = [];
 
-    // Non-admin users only see published stories
-    if (!user || user.role === "editor") {
-      // Editors see all, but non-auth users only see published
-      if (!user) {
-        conditions.push("s.is_published = true");
-      }
+    // Only staff see unpublished drafts; parents and anonymous
+    // visitors get published stories only.
+    if (!isStaff) {
+      conditions.push("s.is_published = true");
     }
 
     if (level) {
@@ -33,7 +32,7 @@ export async function GET(req: NextRequest) {
       conditions.push(`s.level = $${params.length}`);
     }
 
-    if (published !== null && user) {
+    if (published !== null && isStaff) {
       params.push(published === "true");
       conditions.push(`s.is_published = $${params.length}`);
     }
@@ -56,7 +55,7 @@ export async function POST(req: NextRequest) {
   try {
     let user;
     try {
-      user = await requireAuth(req);
+      user = await requireStaff(req);
     } catch {
       return unauthorized();
     }
