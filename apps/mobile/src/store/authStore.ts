@@ -72,7 +72,10 @@ function isTokenExpired(token: string): boolean {
     const { exp } = JSON.parse(json);
     return typeof exp === "number" && exp * 1000 <= Date.now();
   } catch {
-    return false;
+    // Fail closed: a token we can't decode is a token we can't trust —
+    // treat it as expired so the corrupt session drops to free mode now
+    // instead of lingering until the next 401.
+    return true;
   }
 }
 

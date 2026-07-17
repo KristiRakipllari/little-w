@@ -32,6 +32,7 @@ function generateProblem() {
 
 export default function GrownupGateScreen({ onBack, onPass }: Props) {
   const themeId = useAppStore((s) => s.themeId);
+  const motion = useAppStore((s) => s.motion);
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
 
@@ -40,6 +41,8 @@ export default function GrownupGateScreen({ onBack, onPass }: Props) {
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   const shake = () => {
+    // "off" = no animation at all; the wrong-answer tint alone gives feedback.
+    if (motion === "off") return;
     Animated.sequence([
       Animated.timing(shakeAnim, { toValue: -6, duration: 80, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: 6, duration: 80, useNativeDriver: true }),
@@ -91,14 +94,17 @@ export default function GrownupGateScreen({ onBack, onPass }: Props) {
             const isCorrect = isThis && n === problem.correct;
             const isWrong = isThis && n !== problem.correct;
 
+            // Deep fill for the correct tile (white text passes 4.5:1 there,
+            // not on the pastel success/primary); the soft accent error fill
+            // keeps dark text for the same contrast reason.
             let bg = theme.surface;
             let color = theme.textDark;
             if (isCorrect) {
-              bg = theme.success;
-              color = "#fff";
+              bg = theme.primaryDeep;
+              color = theme.onPrimary;
             } else if (isWrong) {
               bg = theme.accent;
-              color = "#fff";
+              color = theme.textDark;
             }
 
             return (

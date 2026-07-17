@@ -6,14 +6,18 @@ interface Props {
   on: boolean;
   onChange: (value: boolean) => void;
   t: AppTheme;
+  // Explicit label for screen readers — implicit sibling-text reading is
+  // not guaranteed across platforms.
+  accessibilityLabel?: string;
 }
 
-export default function Toggle({ on, onChange, t }: Props) {
+export default function Toggle({ on, onChange, t, accessibilityLabel }: Props) {
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => onChange(!on)}
       accessibilityRole="switch"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ checked: on }}
       style={[
         styles.track,

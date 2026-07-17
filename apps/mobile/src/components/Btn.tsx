@@ -31,8 +31,12 @@ export default function Btn({
   disabled = false,
   accessibilityLabel,
 }: Props) {
+  // Text-bearing fills use the deep variants: onPrimary (white) on the pastel
+  // `primary` measures ~2.0–2.5:1, far below WCAG AA 4.5:1; `primaryDeep`
+  // passes on all three themes (5.09 / 7.04 / 6.48). The soft `accent` fill
+  // keeps dark text for the same reason (5.21:1 vs 2.1:1 with white).
   const variantStyles: Record<Variant, ViewStyle> = {
-    primary: { backgroundColor: t.primary },
+    primary: { backgroundColor: t.primaryDeep },
     secondary: {
       backgroundColor: "transparent",
       borderWidth: 2,
@@ -43,7 +47,7 @@ export default function Btn({
   };
 
   const textColor =
-    variant === "secondary" || variant === "ghost" ? t.textDark : t.onPrimary;
+    variant === "primary" ? t.onPrimary : t.textDark;
 
   return (
     <TouchableOpacity

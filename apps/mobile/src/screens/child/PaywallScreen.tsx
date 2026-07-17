@@ -8,7 +8,7 @@ import Card from "@/components/Card";
 import { useAppStore } from "@/store/appStore";
 import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/i18n";
-import { getThemeById, SUBSCRIPTION_PRICE, COLORS } from "@calm-stories/shared";
+import { getThemeById, SUBSCRIPTION_PRICE } from "@calm-stories/shared";
 import {
   presentPaywall,
   purchaseMonthly,
@@ -148,8 +148,15 @@ export default function PaywallScreen({ onPurchased, onLogin, onClose }: Props) 
 
         <View style={styles.spacer} />
 
+        {/* Calm error chip — same soft advisory pairing as ConsentGate;
+            never the saturated admin red on a child-reachable screen. */}
         {purchaseError && (
-          <Text style={[styles.errorText, { color: COLORS.admin.danger }]}>
+          <Text
+            style={[
+              styles.errorText,
+              { color: theme.secondaryDeep, backgroundColor: theme.secondarySoft },
+            ]}
+          >
             {purchaseError}
           </Text>
         )}
@@ -248,5 +255,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    overflow: "hidden",
   },
 });

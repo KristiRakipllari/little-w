@@ -473,8 +473,10 @@ export default function ParentDashboardScreen({
                 style={[
                   styles.dialogBtn,
                   {
+                    // Destructive = Btn danger pairing: soft accent fill,
+                    // dark text (5.21:1) — no off-theme hex.
                     backgroundColor: action.destructive
-                      ? "#FBEAE8"
+                      ? theme.accent
                       : action.onPress
                         ? theme.primarySoft
                         : "transparent",
@@ -492,7 +494,7 @@ export default function ParentDashboardScreen({
                     styles.dialogBtnText,
                     {
                       color: action.destructive
-                        ? "#C0392B"
+                        ? theme.textDark
                         : action.onPress
                           ? theme.primaryDeep
                           : theme.textDark,

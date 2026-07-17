@@ -6,7 +6,9 @@ const workspaceRoot = path.resolve(projectRoot, "../..");
 
 const config = getDefaultConfig(projectRoot);
 
+// Extend (not replace) Expo's default watch folders with the shared package.
 config.watchFolders = [
+  ...(config.watchFolders ?? []),
   path.resolve(workspaceRoot, "packages/shared"),
 ];
 config.resolver.nodeModulesPaths = [

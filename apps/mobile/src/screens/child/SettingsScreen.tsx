@@ -270,7 +270,12 @@ export default function SettingsScreen({ onPolicy, onTerms, onAdmin, onParentAre
                 {t("settings.audioNarrationSub")}
               </Text>
             </View>
-            <Toggle on={audio} onChange={setAudio} t={theme} />
+            <Toggle
+              on={audio}
+              onChange={setAudio}
+              t={theme}
+              accessibilityLabel={t("settings.audioNarration")}
+            />
           </View>
         )}
 
@@ -349,7 +354,9 @@ export default function SettingsScreen({ onPolicy, onTerms, onAdmin, onParentAre
                   { borderTopWidth: 1, borderTopColor: theme.border },
                 ]}
               >
-                <Text style={[styles.linkText, { color: theme.accent || theme.textDark }]}>
+                {/* textDark: accent-on-white is 2.11:1 and accent is the
+                    error color — Log Out is a neutral action. */}
+                <Text style={[styles.linkText, { color: theme.textDark }]}>
                   {t("settings.logOut")}
                 </Text>
               </TouchableOpacity>

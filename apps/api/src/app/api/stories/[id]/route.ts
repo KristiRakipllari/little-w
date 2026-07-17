@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { query, queryOne } from "@calm-stories/db";
+import { deleteFile } from "@/app/lib/storage";
 import { getAuthUser, requireStaff, hasActiveEntitlement } from "@/app/lib/auth";
 import { success, error, notFound, unauthorized, forbidden, serverError } from "@/app/lib/response";
 import type { Story, StoryWithPages, StoryPage, UpdateStoryRequest } from "@calm-stories/shared";
@@ -112,10 +113,26 @@ export async function DELETE(req: NextRequest, { params }: Params) {
       return unauthorized();
     }
 
-    const existing = await queryOne("SELECT id FROM stories WHERE id = $1", [params.id]);
+    const existing = await queryOne<{ id: string; cover_image_url: string | null }>(
+      "SELECT id, cover_image_url FROM stories WHERE id = $1",
+      [params.id]
+    );
     if (!existing) return notFound("Story not found");
 
+    // Collect uploaded files before the cascade wipes the page rows.
+    const pages = await query<{ image_url: string | null }>(
+      "SELECT image_url FROM story_pages WHERE story_id = $1",
+      [params.id]
+    );
+
     await queryOne("DELETE FROM stories WHERE id = $1", [params.id]);
+
+    // Best-effort storage cleanup: the DB cascade removed the rows; without
+    // this the images would sit orphaned in the bucket forever. A failed
+    // file delete must not fail the request.
+    const orphans = [existing.cover_image_url, ...pages.map((p) => p.image_url)]
+      .filter((u): u is string => !!u);
+    await Promise.allSettled(orphans.map((u) => deleteFile(u)));
 
     return success({ deleted: true });
   } catch (err) {

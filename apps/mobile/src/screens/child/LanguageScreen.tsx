@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useAppStore, Locale } from "@/store/appStore";
+import { useTranslation } from "@/i18n";
 import { getThemeById } from "@calm-stories/shared";
 
 const LANGUAGES: { id: Locale; label: string; flag: string }[] = [
@@ -16,15 +17,17 @@ interface Props {
 export default function LanguageScreen({ onContinue }: Props) {
   const { locale, setLocale, themeId } = useAppStore();
   const theme = getThemeById(themeId);
+  // Re-renders on setLocale, so the copy flips live as a language is tapped.
+  const { t } = useTranslation();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.content}>
         <Text style={[styles.heading, { color: theme.textDark }]}>
-          Choose your language
+          {t("language.heading")}
         </Text>
         <Text style={[styles.subheading, { color: theme.textLight }]}>
-          Zgjidh gjuh{"\u00eb"}n t{"\u00eb"}nde
+          {t("language.subheading")}
         </Text>
 
         <View style={styles.options}>
@@ -84,10 +87,10 @@ export default function LanguageScreen({ onContinue }: Props) {
           onPress={onContinue}
           activeOpacity={0.85}
           accessibilityRole="button"
-          style={[styles.continueBtn, { backgroundColor: theme.primary }]}
+          style={[styles.continueBtn, { backgroundColor: theme.primaryDeep }]}
         >
           <Text style={[styles.continueText, { color: theme.onPrimary }]}>
-            {locale === "sq" ? "Vazhdo" : "Continue"}
+            {t("common.continue")}
           </Text>
         </TouchableOpacity>
       </View>

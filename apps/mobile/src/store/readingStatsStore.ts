@@ -242,10 +242,12 @@ export function computeDashboard(
       : 0;
 
   // Streak: consecutive days with reading, ending today (or yesterday, so the
-  // streak isn't shown as broken before today's reading happens)
+  // streak isn't shown as broken before today's reading happens).
+  // Hard cap bounds the loop against any pathological stored data.
+  const MAX_STREAK_DAYS = 400;
   let streak = 0;
   const start = minutesOn(today) > 0 ? 0 : 1;
-  for (let i = start; ; i++) {
+  for (let i = start; i < start + MAX_STREAK_DAYS; i++) {
     if (minutesOn(daysAgo(i)) > 0) streak++;
     else break;
   }

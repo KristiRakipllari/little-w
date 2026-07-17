@@ -32,7 +32,8 @@ export function notFound(message = "Not found") {
 }
 
 export function serverError(err: unknown) {
+  // Log the real error server-side; clients get a generic message — raw
+  // err.message leaks internals (DB constraint names, file paths).
   console.error("Server error:", err);
-  const message = err instanceof Error ? err.message : "Internal server error";
-  return error(message, 500);
+  return error("Internal server error", 500);
 }

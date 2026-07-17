@@ -20,13 +20,15 @@ export default function Segment({ value, onChange, options, t }: Props) {
             onPress={() => onChange(v)}
             activeOpacity={0.8}
             accessibilityRole="radio"
+            accessibilityLabel={label}
             accessibilityState={{ selected }}
             style={[
               styles.option,
               selected && [
                 styles.optionSelected,
                 {
-                  backgroundColor: t.primary,
+                  // primaryDeep, not primary: white label needs ≥4.5:1 (WCAG AA)
+                  backgroundColor: t.primaryDeep,
                   shadowColor: t.primaryShade,
                 },
               ],

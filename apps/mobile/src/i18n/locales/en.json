@@ -3,14 +3,15 @@
     "continue": "Continue",
     "cancel": "Cancel",
     "back": "Back",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "errorTitle": "Something went wrong",
+    "errorBody": "Let's take a slow breath. Then we can try again.",
+    "errorRetry": "Try again"
   },
-
   "splash": {
     "title": "Little World",
     "subtitle": "Calm stories, one page at a time"
   },
-
   "ageGate": {
     "headerTitle": "Welcome",
     "heading": "Who is using this device?",
@@ -20,7 +21,6 @@
     "adultTitle": "13 or older",
     "adultSub": "A parent or guardian setting up"
   },
-
   "privacy": {
     "headerTitle": "Privacy & Safety",
     "heading": "What we promise",
@@ -34,7 +34,6 @@
     "readTerms": "Read the Terms of Service",
     "agreeBtn": "I understand & agree"
   },
-
   "policy": {
     "headerTitle": "Privacy Policy",
     "lastUpdated": "Last updated: Mar 2026",
@@ -45,7 +44,7 @@
     "parentalTitle": "Parental controls",
     "parentalBody": "Subscriptions require a verified grown-up email. Parents can cancel any time from their app store.",
     "contactTitle": "Contact",
-    "contactBody": "Questions? Reach the team at hello@littleworld.app \u2014 we reply within two working days.",
+    "contactBody": "Questions? Reach the team at hello@littleworld.app — we reply within two working days.",
     "understandBtn": "I understand"
   },
   "terms": {
@@ -56,15 +55,15 @@
     "licenseTitle": "Using the app",
     "licenseBody": "We give you a personal, non-commercial licence to enjoy Little World and its stories with your family. Please don't copy, resell, or redistribute the stories, images, or audio.",
     "subscriptionTitle": "Subscriptions & billing",
-    "subscriptionBody": "Premium stories are offered through an auto-renewing subscription billed by the App Store or Google Play. It renews until cancelled. You can manage or cancel any time in your store account \u2014 deleting the app alone does not cancel it.",
+    "subscriptionBody": "Premium stories are offered through an auto-renewing subscription billed by the App Store or Google Play. It renews until cancelled. You can manage or cancel any time in your store account — deleting the app alone does not cancel it.",
     "contentTitle": "Our content",
     "contentBody": "All stories, illustrations, and narration in Little World belong to us or our licensors and are protected by copyright. They are provided for your child's personal enjoyment only.",
     "safeTitle": "A safe space for kids",
-    "safeBody": "There are no ads and no third-party tracking. Grown-up actions \u2014 subscribing, contacting us, opening external links \u2014 sit behind a parental gate. Parents are responsible for supervising their child's use.",
+    "safeBody": "There are no ads and no third-party tracking. Grown-up actions — subscribing, contacting us, opening external links — sit behind a parental gate. Parents are responsible for supervising their child's use.",
     "changesTitle": "Changes",
     "changesBody": "We may update these terms as the app grows. We'll refresh the date above when we do, and continued use means the changes are accepted.",
     "contactTitle": "Contact",
-    "contactBody": "Questions about these terms? Reach us at hello@littleworld.app \u2014 we reply within two working days.",
+    "contactBody": "Questions about these terms? Reach us at hello@littleworld.app — we reply within two working days.",
     "understandBtn": "I understand"
   },
   "consent": {
@@ -89,11 +88,10 @@
     "angry": "Angry",
     "startBtn": "Start story"
   },
-
   "storyList": {
     "todayLabel": "Today",
     "heading": "Stories for you",
-    "continueLabel": "Continue \u00b7 Page {{current}} of {{total}}",
+    "continueLabel": "Continue · Page {{current}} of {{total}}",
     "minRead": "{{min}} min",
     "pages": "{{count}} pages",
     "storyCount": "{{count}} story",
@@ -104,7 +102,6 @@
     "addFavorite": "Add to favourites",
     "removeFavorite": "Remove from favourites"
   },
-
   "storyPlayer": {
     "pagePill": "Page {{current}} of {{total}}",
     "readAloud": "Read aloud",
@@ -112,18 +109,16 @@
     "next": "Next",
     "finish": "Finish"
   },
-
   "storyComplete": {
     "title": "You finished!",
     "subtitle": "{{story}} — great reading.",
     "readAgain": "Read it again",
     "backToStories": "Back to stories"
   },
-
   "paywall": {
     "headerTitle": "Premium",
     "heroTitle": "Unlock the rest",
-    "heroSub": "20+ stories \u00b7 audio narration \u00b7 new each week",
+    "heroSub": "20+ stories · audio narration · new each week",
     "benefitStoriesLabel": "More stories",
     "benefitStoriesDesc": "20+ premium stories with new ones every week",
     "benefitAudioLabel": "Audio narration",
@@ -132,7 +127,7 @@
     "benefitThemesDesc": "More gentle color sets to choose from",
     "pricingThen": "Then",
     "pricingAmount": "{{price}} / month",
-    "pricingNote": "First week free \u00b7 cancel any time",
+    "pricingNote": "First week free · cancel any time",
     "pricingNoteNoTrial": "Cancel any time",
     "startTrial": "Start free week",
     "getPremium": "Get Premium",
@@ -141,18 +136,6 @@
     "loginToContinue": "Log in to continue",
     "maybeLater": "Maybe later"
   },
-
-  "parentGate": {
-    "headerTitle": "Grown-up check",
-    "heading": "A grown-up needs to confirm",
-    "desc": "We'll email a link to verify. The subscription only starts once they tap it.",
-    "label": "Parent email",
-    "placeholder": "parent@example.com",
-    "hint": "We never share or sell email addresses.",
-    "successText": "Link sent. Check your inbox.",
-    "sendBtn": "Send verification link"
-  },
-
   "settings": {
     "heading": "Settings",
     "theme": "Theme",
@@ -167,7 +150,7 @@
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
     "contactSupport": "Contact support",
-    "version": "Little World \u00b7 v1.0.0 (build 1)",
+    "version": "Little World · v1.0.0 (build 1)",
     "adminPanel": "Admin Panel",
     "parentArea": "Parent area",
     "account": "Account",
@@ -175,31 +158,28 @@
     "logOut": "Log out",
     "loggedInAs": "Logged in as"
   },
-
   "language": {
     "albanian": "Shqip",
-    "english": "English"
+    "english": "English",
+    "heading": "Choose your language",
+    "subheading": "You can change this anytime in Settings"
   },
-
   "textSizeOptions": {
     "s": "S",
     "m": "M",
     "l": "L"
   },
-
   "animationOptions": {
     "slow": "Slow",
     "normal": "Normal",
     "off": "Off"
   },
-
   "grownupGate": {
     "headerTitle": "Grown-up check",
     "subtitle": "This area is for parents.",
     "heading": "Tap the answer",
     "footerNote": "We ask a small question so children don't open the parent area by mistake."
   },
-
   "parentDashboard": {
     "headerTitle": "Parent area",
     "hello": "Hello, grown-up",
@@ -247,7 +227,6 @@
     "done": "Done",
     "privacyNote": "All reading data stays on this device. We never share it."
   },
-
   "auth": {
     "headerTitle": "Parent Sign In",
     "heading": "Welcome, grown-up",
@@ -270,7 +249,6 @@
     "forgotSentDesc": "If an account exists with that email, we've sent a reset link. It may take a minute to arrive.",
     "backToLogin": "Back to log in"
   },
-
   "tabs": {
     "stories": "Stories",
     "settings": "Settings"

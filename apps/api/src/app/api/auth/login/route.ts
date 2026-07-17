@@ -1,8 +1,12 @@
 import { NextRequest } from "next/server";
 import { queryOne } from "@calm-stories/db";
 import { hashPassword, verifyPassword, isLegacyHash, signToken } from "@/app/lib/auth";
+import { rateLimit, clearRateLimit } from "@/app/lib/rateLimit";
 import { success, error, serverError } from "@/app/lib/response";
 import type { User, LoginRequest } from "@calm-stories/shared";
+
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +14,14 @@ export async function POST(req: NextRequest) {
 
     if (!body.email || !body.password) {
       return error("Email and password are required");
+    }
+
+    // Brute-force guard: 5 attempts per email+IP per window; a successful
+    // login clears the bucket so real users are never locked out for long.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const limitKey = `login:${ip}:${body.email.toLowerCase()}`;
+    if (!rateLimit(limitKey, MAX_ATTEMPTS, WINDOW_MS)) {
+      return error("Too many attempts. Please try again later.", 429);
     }
 
     const user = await queryOne<User & { password_hash: string }>(
@@ -20,6 +32,8 @@ export async function POST(req: NextRequest) {
     if (!user || !(await verifyPassword(body.password, user.password_hash))) {
       return error("Invalid email or password", 401);
     }
+
+    clearRateLimit(limitKey);
 
     // Migrate-on-login: silently upgrade pre-bcrypt (SHA-256) hashes now
     // that we hold the verified plaintext. Users notice nothing.

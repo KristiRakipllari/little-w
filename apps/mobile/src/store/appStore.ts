@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DEFAULT_THEME_ID } from "@calm-stories/shared";
+import { DEFAULT_THEME_ID, THEMES } from "@calm-stories/shared";
 
 export type AgeChoice = "child" | "adult" | null;
 export type TextSize = "s" | "m" | "l";
@@ -35,9 +35,6 @@ interface AppState {
   lastReadPage: number;
   paywallStory: string | null;
 
-  // Parent gate
-  parentEmail: string;
-
   // Settings
   locale: Locale;
   themeId: string;
@@ -51,7 +48,6 @@ interface AppState {
   acceptConsent: (guardianConfirmed: boolean) => void;
   setLastRead: (storyId: string, page: number) => void;
   setPaywallStory: (storyId: string | null) => void;
-  setParentEmail: (email: string) => void;
   setLocale: (locale: Locale) => void;
   setThemeId: (id: string) => void;
   setAudio: (on: boolean) => void;
@@ -70,7 +66,6 @@ const DEFAULTS = {
   lastReadStoryId: null as string | null,
   lastReadPage: 1,
   paywallStory: null as string | null,
-  parentEmail: "",
   locale: "sq" as Locale,
   themeId: DEFAULT_THEME_ID,
   audio: true,
@@ -80,6 +75,53 @@ const DEFAULTS = {
 
 function persist(partial: Partial<typeof DEFAULTS>) {
   AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify(partial)).catch(() => {});
+}
+
+// Persisted JSON survives app updates, so never trust it verbatim: only
+// whitelisted keys come through, and enum-ish fields are coerced back to a
+// valid value. A corrupt/stale entry must degrade to its default, not
+// white-screen the launch.
+function oneOf<T>(value: unknown, allowed: readonly T[], fallback: T): T {
+  return allowed.includes(value as T) ? (value as T) : fallback;
+}
+
+function sanitizeSaved(saved: unknown): Partial<typeof DEFAULTS> {
+  if (typeof saved !== "object" || saved === null) return {};
+  const s = saved as Record<string, unknown>;
+  const out: Partial<typeof DEFAULTS> = {
+    ageChoice: oneOf<AgeChoice>(s.ageChoice, ["child", "adult", null], null),
+    agreed: s.agreed === true,
+    locale: oneOf<Locale>(s.locale, ["sq", "en"], DEFAULTS.locale),
+    themeId:
+      typeof s.themeId === "string" && THEMES.some((t) => t.id === s.themeId)
+        ? s.themeId
+        : DEFAULTS.themeId,
+    audio: typeof s.audio === "boolean" ? s.audio : DEFAULTS.audio,
+    textSize: oneOf<TextSize>(s.textSize, ["s", "m", "l"], DEFAULTS.textSize),
+    motion: oneOf<MotionPref>(s.motion, ["slow", "normal", "off"], DEFAULTS.motion),
+    lastReadStoryId:
+      typeof s.lastReadStoryId === "string" ? s.lastReadStoryId : null,
+    lastReadPage:
+      typeof s.lastReadPage === "number" && s.lastReadPage >= 1
+        ? Math.floor(s.lastReadPage)
+        : DEFAULTS.lastReadPage,
+  };
+  const c = s.consentData as Record<string, unknown> | null | undefined;
+  if (
+    c &&
+    typeof c === "object" &&
+    typeof c.version === "number" &&
+    typeof c.acceptedAt === "string"
+  ) {
+    out.consentData = {
+      version: c.version,
+      acceptedAt: c.acceptedAt,
+      guardianConfirmed: c.guardianConfirmed === true,
+    };
+  } else {
+    out.consentData = null;
+  }
+  return out;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -111,9 +153,6 @@ export const useAppStore = create<AppState>((set) => ({
   setPaywallStory: (paywallStory) => {
     set({ paywallStory });
   },
-  setParentEmail: (parentEmail) => {
-    set({ parentEmail });
-  },
   setLocale: (locale) => {
     set({ locale });
     persist({ locale });
@@ -143,7 +182,7 @@ export const useAppStore = create<AppState>((set) => ({
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
       if (raw) {
         const saved = JSON.parse(raw);
-        set({ ...saved, hydrated: true });
+        set({ ...sanitizeSaved(saved), hydrated: true });
       } else {
         set({ hydrated: true });
       }

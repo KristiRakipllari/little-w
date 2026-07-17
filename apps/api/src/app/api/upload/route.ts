@@ -26,19 +26,11 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
 
-    // Debug: log all FormData keys
-    const keys: string[] = [];
-    formData.forEach((val, key) => {
-      keys.push(`${key}=${typeof val === "string" ? val : `[Blob size=${(val as Blob).size}]`}`);
-    });
-    console.log("[upload] FormData entries:", keys.join(", "));
-
     const fileEntry = formData.get("file");
     const storyId = formData.get("storyId") as string | null;
     const type = (formData.get("type") as string) || "page";
 
     if (!fileEntry || typeof fileEntry === "string") {
-      console.log("[upload] fileEntry type:", typeof fileEntry, "value:", fileEntry);
       return error("No file provided");
     }
 
@@ -51,8 +43,6 @@ export async function POST(req: NextRequest) {
     const fileName = file.name || (formData.get("filename") as string) || `upload_${Date.now()}`;
     const fileType = file.type || "";
     const fileSize = file.size || 0;
-
-    console.log("[upload] fileName:", fileName, "fileType:", fileType, "fileSize:", fileSize);
 
     // Resolve content type from declared type or file extension
     const contentType = (() => {

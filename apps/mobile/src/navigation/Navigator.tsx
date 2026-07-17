@@ -3,6 +3,7 @@ import { View, StyleSheet, Platform } from "react-native";
 import { BlurView } from "expo-blur";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Circle } from "react-native-svg";
 import { TouchableOpacity, Text } from "react-native";
@@ -11,6 +12,7 @@ import { useAppStore, hasValidConsent } from "@/store/appStore";
 import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/i18n";
 import { getThemeById } from "@calm-stories/shared";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Screens
 import SplashScreen from "@/screens/child/SplashScreen";
@@ -25,7 +27,6 @@ import StoryList from "@/screens/child/StoryList";
 import MoodCheckIn from "@/screens/child/MoodCheckIn";
 import StoryPlayer from "@/screens/child/StoryPlayer";
 import PaywallScreen from "@/screens/child/PaywallScreen";
-import ParentGateScreen from "@/screens/child/ParentGateScreen";
 import SettingsScreen from "@/screens/child/SettingsScreen";
 import GrownupGateScreen from "@/screens/child/GrownupGateScreen";
 import ParentDashboardScreen from "@/screens/child/ParentDashboardScreen";
@@ -48,8 +49,9 @@ export type RootStackParamList = {
   MoodCheckIn: { storyId: string };
   StoryPlayer: { storyId: string };
   Paywall: { storyId: string };
-  ParentGate: undefined;
-  GrownupGate: undefined;
+  // The gate protects more than one destination; `next` says where a pass
+  // leads (default: ParentDashboard). "Login" = admin login.
+  GrownupGate: { next?: "ParentDashboard" | "Login" } | undefined;
   ParentDashboard: undefined;
   Policy: undefined;
   Terms: undefined;
@@ -64,6 +66,11 @@ export type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+type Screen<T extends keyof RootStackParamList> = NativeStackScreenProps<
+  RootStackParamList,
+  T
+>;
 
 // ── Custom Tab Bar ───────────────────────────
 function TabBar({
@@ -169,7 +176,7 @@ function TabBar({
 }
 
 // ── Child Main (tabs) ────────────────────────
-function ChildMainScreen({ navigation }: any) {
+function ChildMainScreen({ navigation }: Screen<"ChildMain">) {
   const [activeTab, setActiveTab] = useState<"home" | "settings">("home");
   const themeId = useAppStore((s) => s.themeId);
   const theme = getThemeById(themeId);
@@ -203,7 +210,10 @@ function ChildMainScreen({ navigation }: any) {
   }, [navigation]);
 
   const handleAdmin = useCallback(() => {
-    navigation.navigate("Login");
+    // Staff login is adult-only content: it must sit behind the grownup
+    // gate, same as the parent area (accessibility-autism: no ungated
+    // exits from child mode).
+    navigation.navigate("GrownupGate", { next: "Login" });
   }, [navigation]);
 
   const handleParentArea = useCallback(() => {
@@ -232,9 +242,15 @@ function ChildMainScreen({ navigation }: any) {
 
 // ── Onboarding Flow ──────────────────────────
 function OnboardingScreen() {
+  const ageChoice = useAppStore((s) => s.ageChoice);
   const [step, setStep] = useState<
-    "splash" | "language" | "age" | "privacy" | "terms" | "consent"
+    "splash" | "language" | "age" | "privacy" | "terms" | "grownup" | "consent"
   >("splash");
+
+  // COPPA: when the user said "I am a child" at the age gate, the guardian
+  // consent step must be reached through the grownup challenge — a child
+  // ticking "I confirm I am the parent/guardian" alone is not consent.
+  const needsGrownupCheck = ageChoice === "child";
 
   switch (step) {
     case "splash":
@@ -254,13 +270,20 @@ function OnboardingScreen() {
       return (
         <TermsAndConditions
           onBack={() => setStep("privacy")}
-          onContinue={() => setStep("consent")}
+          onContinue={() => setStep(needsGrownupCheck ? "grownup" : "consent")}
+        />
+      );
+    case "grownup":
+      return (
+        <GrownupGateScreen
+          onBack={() => setStep("terms")}
+          onPass={() => setStep("consent")}
         />
       );
     case "consent":
       return (
         <ConsentGate
-          onBack={() => setStep("terms")}
+          onBack={() => setStep(needsGrownupCheck ? "grownup" : "terms")}
           // acceptConsent (called inside ConsentGate) flips the launch gate,
           // which swaps this whole stack over to the main app.
           onConfirm={() => {}}
@@ -320,11 +343,6 @@ export default function Navigator() {
                 options={{ presentation: "modal" }}
               />
               <Stack.Screen
-                name="ParentGate"
-                component={ParentGateWrapper}
-                options={{ presentation: "modal" }}
-              />
-              <Stack.Screen
                 name="Policy"
                 component={PolicyWrapper}
                 options={{ presentation: "modal" }}
@@ -369,7 +387,7 @@ export default function Navigator() {
 
 // ── Wrapper components ──────────────────────
 
-function MoodCheckInWrapper({ route, navigation }: any) {
+function MoodCheckInWrapper({ route, navigation }: Screen<"MoodCheckIn">) {
   const storyId = route.params.storyId;
   return (
     <MoodCheckIn
@@ -381,16 +399,19 @@ function MoodCheckInWrapper({ route, navigation }: any) {
   );
 }
 
-function StoryPlayerWrapper({ route, navigation }: any) {
+function StoryPlayerWrapper({ route, navigation }: Screen<"StoryPlayer">) {
   return (
-    <StoryPlayer
-      storyId={route.params.storyId}
-      onBack={() => navigation.goBack()}
-    />
+    // A bad story page must fall back calmly, not white-screen the reader.
+    <ErrorBoundary>
+      <StoryPlayer
+        storyId={route.params.storyId}
+        onBack={() => navigation.goBack()}
+      />
+    </ErrorBoundary>
   );
 }
 
-function PaywallWrapper({ route, navigation }: any) {
+function PaywallWrapper({ route, navigation }: Screen<"Paywall">) {
   const storyId = route.params?.storyId;
   return (
     <PaywallScreen
@@ -408,30 +429,27 @@ function PaywallWrapper({ route, navigation }: any) {
   );
 }
 
-function ParentGateWrapper({ navigation }: any) {
-  return <ParentGateScreen onBack={() => navigation.goBack()} />;
-}
-
-function PolicyWrapper({ navigation }: any) {
+function PolicyWrapper({ navigation }: Screen<"Policy">) {
   return <PolicyScreen onBack={() => navigation.goBack()} />;
 }
 
-function TermsWrapper({ navigation }: any) {
+function TermsWrapper({ navigation }: Screen<"Terms">) {
   return <TermsScreen onBack={() => navigation.goBack()} />;
 }
 
-function GrownupGateWrapper({ navigation }: any) {
+function GrownupGateWrapper({ route, navigation }: Screen<"GrownupGate">) {
+  const next = route.params?.next ?? "ParentDashboard";
   return (
     <GrownupGateScreen
       onBack={() => navigation.goBack()}
       onPass={() => {
-        navigation.replace("ParentDashboard");
+        navigation.replace(next);
       }}
     />
   );
 }
 
-function ParentDashboardWrapper({ navigation }: any) {
+function ParentDashboardWrapper({ navigation }: Screen<"ParentDashboard">) {
   const { isSubscribed } = useAuthStore();
   return (
     <ParentDashboardScreen
@@ -443,7 +461,7 @@ function ParentDashboardWrapper({ navigation }: any) {
   );
 }
 
-function LoginRegisterWrapper({ route, navigation }: any) {
+function LoginRegisterWrapper({ route, navigation }: Screen<"LoginRegister">) {
   const storyId = route.params?.storyId;
 
   return (
@@ -468,11 +486,11 @@ function LoginRegisterWrapper({ route, navigation }: any) {
   );
 }
 
-function ForgotPasswordWrapper({ navigation }: any) {
+function ForgotPasswordWrapper({ navigation }: Screen<"ForgotPassword">) {
   return <ForgotPassword onBack={() => navigation.goBack()} />;
 }
 
-function AdminLoginWrapper({ navigation }: any) {
+function AdminLoginWrapper({ navigation }: Screen<"Login">) {
   const { setMode } = useAuthStore();
   return (
     <Login

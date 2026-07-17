@@ -1,14 +1,25 @@
 import { Platform } from "react-native";
 import { PREMIUM_ENTITLEMENT_ID } from "@calm-stories/shared";
 
-// Physical devices use LAN IP, web/simulators use localhost
-// Update this IP to match your computer's local network address (ipconfig)
+// Preferred: set EXPO_PUBLIC_API_URL (in .env or the shell) — it wins in
+// every build. Dev fallback: physical devices use the LAN IP below,
+// web/simulators use localhost (update the IP to match `ipconfig`).
 const LOCAL_API =
   Platform.OS === "web" ? "http://localhost:3000" : "http://192.168.1.46:3000";
 
+const ENV_API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+if (!__DEV__ && !ENV_API_URL) {
+  // A release build without a real API URL cannot work — fail loudly at
+  // startup (the ErrorBoundary shows a calm fallback) instead of silently
+  // rendering an empty story list.
+  console.error(
+    "[config] EXPO_PUBLIC_API_URL is not set — production builds must define it."
+  );
+}
 
 export const CONFIG = {
-  API_URL: __DEV__ ? LOCAL_API : "https://your-production-url.vercel.app",
+  API_URL: ENV_API_URL || (__DEV__ ? LOCAL_API : ""),
   STORAGE_KEYS: {
     AUTH_TOKEN: "calm_auth_token",
     USER_DATA: "calm_user_data",

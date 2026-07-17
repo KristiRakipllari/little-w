@@ -4,16 +4,17 @@
     "slug": "calm-stories",
     "version": "1.0.0",
     "orientation": "portrait",
-
     "userInterfaceStyle": "light",
     "splash": {
       "backgroundColor": "#F7F5EF",
       "resizeMode": "contain"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.calmstories.app"
+      "bundleIdentifier": "com.littleworld.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,6 +22,14 @@
       },
       "package": "com.littleworld.app"
     },
-    "plugins": []
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Little World uses your photo library so admins can attach story images."
+        }
+      ],
+      "expo-localization"
+    ]
   }
 }

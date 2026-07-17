@@ -77,9 +77,10 @@ export async function login(body: LoginRequest): Promise<AuthTokens> {
 }
 
 export async function register(body: LoginRequest): Promise<AuthTokens> {
+  // No display name collected in the app — the API defaults it server-side.
   const res = await request<AuthTokens>(API_ENDPOINTS.AUTH.REGISTER, {
     method: "POST",
-    body: JSON.stringify({ ...body, name: body.email.split("@")[0] }),
+    body: JSON.stringify(body),
   });
   return res.data!;
 }

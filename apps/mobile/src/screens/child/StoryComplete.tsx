@@ -30,7 +30,8 @@ interface ConfettiSpec {
   drift: number; // px of horizontal drift over the fall
 }
 
-// One falling confetti piece, looping gently from top to bottom.
+// One falling confetti piece. Falls exactly once, then fades out — a capped
+// celebration, not an endless loop of visual stimulation (calm-first rule).
 function ConfettiPiece({
   spec,
   fallHeight,
@@ -41,24 +42,23 @@ function ConfettiPiece({
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.delay(spec.delay),
-        Animated.timing(progress, {
-          toValue: 1,
-          duration: spec.dur,
-          easing: Easing.in(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(progress, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
+    const anim = Animated.sequence([
+      Animated.delay(spec.delay),
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: spec.dur,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: true,
+      }),
+      // Snap back to 0 → opacity interpolates to 0, the piece stays hidden.
+      Animated.timing(progress, {
+        toValue: 0,
+        duration: 0,
+        useNativeDriver: true,
+      }),
+    ]);
+    anim.start();
+    return () => anim.stop();
   }, [progress, spec.delay, spec.dur]);
 
   const translateY = progress.interpolate({
@@ -145,6 +145,7 @@ export default function StoryComplete({
       stiffness: 180,
       useNativeDriver: true,
     }).start();
+    // Two gentle pulses (~5s at normal pace) then rest — bounded on purpose.
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
@@ -159,7 +160,8 @@ export default function StoryComplete({
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
+      ]),
+      { iterations: 2 }
     );
     const timer = setTimeout(() => pulseLoop.start(), 500 * pace);
     return () => {

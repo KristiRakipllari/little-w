@@ -213,20 +213,32 @@ async function seed() {
 
   console.log("  Admin user created (admin@littleworld.app / admin123)");
 
-  // Create parent accounts (free + premium)
+  // Create parent accounts (free + premium) — role must be 'parent' so the
+  // test logins behave like real parents (no draft visibility, no content
+  // writes), not staff.
   const parentFreePassword = hashPassword("parent123");
   await query(
     `INSERT INTO users (email, password_hash, name, role)
      VALUES ($1, $2, $3, $4)`,
-    ["free@littleworld.app", parentFreePassword, "Free Parent", "editor"]
+    ["free@littleworld.app", parentFreePassword, "Free Parent", "parent"]
   );
   console.log("  Free parent created (free@littleworld.app / parent123)");
 
+  // The premium account gets a non-expiring promotional entitlement so it is
+  // actually premium. Value must match PREMIUM_ENTITLEMENT_ID in
+  // packages/shared/src/constants.ts ("Little World Premium").
   const parentPremiumPassword = hashPassword("parent123");
   await query(
-    `INSERT INTO users (email, password_hash, name, role)
-     VALUES ($1, $2, $3, $4)`,
-    ["premium@littleworld.app", parentPremiumPassword, "Premium Parent", "editor"]
+    `INSERT INTO users (email, password_hash, name, role, entitlement, entitlement_store)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [
+      "premium@littleworld.app",
+      parentPremiumPassword,
+      "Premium Parent",
+      "parent",
+      "Little World Premium",
+      "promotional",
+    ]
   );
   console.log("  Premium parent created (premium@littleworld.app / parent123)");
 

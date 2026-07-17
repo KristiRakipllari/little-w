@@ -32,7 +32,8 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  name: string;
+  // Optional — the API defaults it to the email prefix when omitted.
+  name?: string;
   role?: UserRole;
 }
 

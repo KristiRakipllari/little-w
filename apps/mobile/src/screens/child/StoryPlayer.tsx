@@ -31,6 +31,13 @@ const DECOR_COLORS: Record<string, string> = {
   advanced: "#9982D4",
 };
 
+// The reading text obeys the accessibility textSize setting (s/m/l).
+const TEXT_SIZES: Record<"s" | "m" | "l", { fontSize: number; lineHeight: number }> = {
+  s: { fontSize: 18, lineHeight: 27 },
+  m: { fontSize: 22, lineHeight: 32 },
+  l: { fontSize: 26, lineHeight: 38 },
+};
+
 interface Props {
   storyId: string;
   onBack: () => void;
@@ -40,6 +47,8 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
   const themeId = useAppStore((s) => s.themeId);
   const locale = useAppStore((s) => s.locale);
   const audio = useAppStore((s) => s.audio);
+  const textSize = useAppStore((s) => s.textSize);
+  const motion = useAppStore((s) => s.motion);
   const lastReadStoryId = useAppStore((s) => s.lastReadStoryId);
   const lastReadPage = useAppStore((s) => s.lastReadPage);
   const setLastRead = useAppStore((s) => s.setLastRead);
@@ -159,7 +168,7 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
               style={styles.image}
               contentFit="cover"
               cachePolicy="disk"
-              transition={200}
+              transition={motion === "off" ? 0 : 200}
             />
           ) : (
             <LinearGradient
@@ -186,7 +195,7 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
         </View>
 
         {/* Story text */}
-        <Text style={[styles.storyText, { color: theme.textDark }]}>
+        <Text style={[styles.storyText, TEXT_SIZES[textSize], { color: theme.textDark }]}>
           {page ? getPageText(page) : ""}
         </Text>
 
@@ -199,7 +208,8 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
               <TouchableOpacity
                 style={[
                   styles.playBtn,
-                  { backgroundColor: theme.primary, shadowColor: theme.primaryShade },
+                  // primaryDeep: the white icon needs ≥3:1 on its fill
+                  { backgroundColor: theme.primaryDeep, shadowColor: theme.primaryShade },
                 ]}
                 activeOpacity={0.85}
                 accessibilityLabel={t("storyPlayer.readAloud")}
@@ -240,6 +250,7 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
             onPress={() => setPageIdx((p) => p - 1)}
             fullWidth={false}
             style={styles.navBtn}
+            accessibilityLabel={t("storyPlayer.previous")}
           >
             <View style={styles.navBtnContent}>
               <Svg width={16} height={16} viewBox="0 0 16 16">
@@ -344,11 +355,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Text
+  // Text — fontSize/lineHeight come from TEXT_SIZES (textSize setting)
   storyText: {
-    fontSize: 22,
     fontWeight: "600",
-    lineHeight: 32,
     letterSpacing: -0.2,
     paddingTop: 24,
     paddingHorizontal: 4,

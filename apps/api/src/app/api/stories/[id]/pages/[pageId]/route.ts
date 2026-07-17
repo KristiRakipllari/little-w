@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { queryOne } from "@calm-stories/db";
+import { queryOne, pool } from "@calm-stories/db";
 import { requireStaff } from "@/app/lib/auth";
+import { deleteFile } from "@/app/lib/storage";
 import { success, error, notFound, unauthorized, serverError } from "@/app/lib/response";
 import type { StoryPage, UpdatePageRequest } from "@calm-stories/shared";
 
@@ -81,19 +82,44 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     );
     if (!existing) return notFound("Page not found");
 
-    await queryOne("DELETE FROM story_pages WHERE id = $1", [params.pageId]);
+    // Delete + renumber atomically. The negate-then-renumber trick (same as
+    // the reorder endpoint) avoids transient UNIQUE(story_id, page_number)
+    // violations — a single renumbering UPDATE can hit the constraint
+    // depending on row-processing order.
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("DELETE FROM story_pages WHERE id = $1", [
+        params.pageId,
+      ]);
+      await client.query(
+        "UPDATE story_pages SET page_number = -page_number WHERE story_id = $1",
+        [params.id]
+      );
+      // Values are all negative now; original ascending order = descending
+      // negatives, so ROW_NUMBER over DESC restores 1..n gap-free.
+      await client.query(
+        `UPDATE story_pages
+         SET page_number = sub.new_number
+         FROM (
+           SELECT id, ROW_NUMBER() OVER (ORDER BY page_number DESC) AS new_number
+           FROM story_pages WHERE story_id = $1
+         ) sub
+         WHERE story_pages.id = sub.id`,
+        [params.id]
+      );
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
 
-    // Re-number remaining pages
-    await queryOne(
-      `UPDATE story_pages
-       SET page_number = sub.new_number
-       FROM (
-         SELECT id, ROW_NUMBER() OVER (ORDER BY page_number) AS new_number
-         FROM story_pages WHERE story_id = $1
-       ) sub
-       WHERE story_pages.id = sub.id`,
-      [params.id]
-    );
+    // Best-effort storage cleanup — the DB row is gone either way, and a
+    // failed file delete must not fail the request.
+    const orphans = [existing.image_url].filter((u): u is string => !!u);
+    await Promise.allSettled(orphans.map((u) => deleteFile(u)));
 
     return success({ deleted: true });
   } catch (err) {

@@ -304,6 +304,7 @@ function FeaturedCard({
   const tint = TINTS[story.level] || TINTS.beginner;
   const decor = DECOR_COLORS[story.level] || "#FFB347";
   const progress = story.page_count > 0 ? currentPage / story.page_count : 0;
+  const motion = useAppStore((s) => s.motion);
 
   return (
     <Card t={theme} style={styles.featuredCard} onPress={onPress}>
@@ -314,7 +315,7 @@ function FeaturedCard({
             style={StyleSheet.absoluteFill}
             contentFit="cover"
             cachePolicy="memory-disk"
-            transition={200}
+            transition={motion === "off" ? 0 : 200}
           />
         ) : (
           <>
@@ -330,7 +331,7 @@ function FeaturedCard({
           </>
         )}
         <View style={styles.continuePill}>
-          <Text style={styles.continueText}>
+          <Text style={[styles.continueText, { color: theme.secondaryDeep }]}>
             {t("storyList.continueLabel", { current: currentPage, total: story.page_count })}
           </Text>
         </View>
@@ -388,6 +389,7 @@ function StoryRow({
 }) {
   const tint = TINTS[story.level] || TINTS.beginner;
   const decor = DECOR_COLORS[story.level] || "#FFB347";
+  const motion = useAppStore((s) => s.motion);
 
   return (
     <Card t={theme} style={styles.rowCard} onPress={onPress}>
@@ -399,7 +401,7 @@ function StoryRow({
             style={StyleSheet.absoluteFill}
             contentFit="cover"
             cachePolicy="memory-disk"
-            transition={200}
+            transition={motion === "off" ? 0 : 200}
           />
         ) : (
           <>
@@ -552,10 +554,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 99,
   },
+  // Color comes from theme.secondaryDeep at the render site.
   continueText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#7A4F1A",
     letterSpacing: 0.3,
     textTransform: "uppercase",
   },

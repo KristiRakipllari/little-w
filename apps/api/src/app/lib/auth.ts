@@ -5,6 +5,11 @@ import bcrypt from "bcryptjs";
 import { queryOne } from "@calm-stories/db";
 import type { User } from "@calm-stories/shared";
 
+// The dev fallback must never sign production tokens — anyone who reads the
+// source could forge an admin JWT. Fail fast instead.
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET must be set in production");
+}
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN ||
   "7d") as jwt.SignOptions["expiresIn"];

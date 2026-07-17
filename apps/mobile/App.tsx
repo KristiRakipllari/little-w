@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { TamaguiProvider } from "tamagui";
 import config from "@/theme/config";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Navigator from "@/navigation/Navigator";
 import { useAppStore } from "@/store/appStore";
 import { useAuthStore, attachPurchasesSync } from "@/store/authStore";
@@ -41,7 +42,9 @@ function AppContent() {
   return (
     <>
       <StatusBar style="dark" />
-      <Navigator />
+      <ErrorBoundary>
+        <Navigator />
+      </ErrorBoundary>
     </>
   );
 }
