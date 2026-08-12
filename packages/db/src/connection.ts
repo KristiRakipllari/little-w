@@ -18,6 +18,7 @@ const DATABASE_URL = process.env.DATABASE_URL;
 // half-written .env connected silently to the wrong place instead of saying
 // so — the exact failure mode that makes a misconfigured database look like a
 // broken app. Fail loudly instead, same as the JWT_SECRET and SMTP guards.
+// Testing
 if (!DATABASE_URL && !(process.env.DB_USER && process.env.DB_PASSWORD)) {
   throw new Error(
     "Database is not configured. Set DATABASE_URL (hosted), or DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME (local Docker), in the project root .env — copy .env.example to start."
