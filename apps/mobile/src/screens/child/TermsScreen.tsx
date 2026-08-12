@@ -4,7 +4,7 @@ import ScreenHeader from "@/components/ScreenHeader";
 import Btn from "@/components/Btn";
 import { useAppStore } from "@/store/appStore";
 import { useTranslation } from "@/i18n";
-import { getThemeById } from "@calm-stories/shared";
+import { getThemeById, TERMS_LAST_UPDATED } from "@calm-stories/shared";
 
 interface Props {
   onBack: () => void;
@@ -13,7 +13,7 @@ interface Props {
 export default function TermsScreen({ onBack }: Props) {
   const themeId = useAppStore((s) => s.themeId);
   const theme = getThemeById(themeId);
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   const SECTIONS = [
     { title: t("terms.agreementTitle"), body: t("terms.agreementBody") },
@@ -35,7 +35,7 @@ export default function TermsScreen({ onBack }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.date, { color: theme.textLight }]}>
-          {t("terms.lastUpdated")}
+          {t("terms.lastUpdated", { date: TERMS_LAST_UPDATED[locale] })}
         </Text>
 
         {SECTIONS.map((s) => (

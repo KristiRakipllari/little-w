@@ -1,4 +1,10 @@
-import type { AuthTokens, LoginRequest } from "@calm-stories/shared";
+import type {
+  AuthTokens,
+  LoginRequest,
+  RegisterRequest,
+  MeResponse,
+  SupportedLocale,
+} from "@calm-stories/shared";
 import { API_ENDPOINTS } from "@calm-stories/shared";
 import { request } from "./client";
 
@@ -12,13 +18,31 @@ export async function login(body: LoginRequest): Promise<AuthTokens> {
   return res.data!;
 }
 
-export async function register(body: LoginRequest): Promise<AuthTokens> {
+export async function register(body: RegisterRequest): Promise<AuthTokens> {
   // No display name collected in the app — the API defaults it server-side.
   const res = await request<AuthTokens>(API_ENDPOINTS.AUTH.REGISTER, {
     method: "POST",
     body: JSON.stringify(body),
   });
   return res.data!;
+}
+
+// ─── Email verification ──────────────────────
+
+/** Current user + whether the server can enforce verification at all. */
+export async function fetchMe(): Promise<MeResponse> {
+  const res = await request<MeResponse>(API_ENDPOINTS.AUTH.ME);
+  return res.data!;
+}
+
+export async function resendVerification(
+  email: string,
+  locale: SupportedLocale
+): Promise<void> {
+  await request(API_ENDPOINTS.AUTH.RESEND_VERIFICATION, {
+    method: "POST",
+    body: JSON.stringify({ email, locale }),
+  });
 }
 
 // ─── Password reset ──────────────────────────

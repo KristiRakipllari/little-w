@@ -11,7 +11,7 @@ import ScreenHeader from "@/components/ScreenHeader";
 import Btn from "@/components/Btn";
 import { useAppStore } from "@/store/appStore";
 import { useTranslation } from "@/i18n";
-import { getThemeById } from "@calm-stories/shared";
+import { getThemeById, TERMS_LAST_UPDATED } from "@calm-stories/shared";
 
 interface Props {
   onContinue: () => void;
@@ -24,7 +24,7 @@ const SCROLL_END_THRESHOLD = 24;
 export default function TermsAndConditions({ onContinue, onBack }: Props) {
   const themeId = useAppStore((s) => s.themeId);
   const theme = getThemeById(themeId);
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   const [reachedEnd, setReachedEnd] = useState(false);
   const [viewportH, setViewportH] = useState(0);
@@ -77,7 +77,7 @@ export default function TermsAndConditions({ onContinue, onBack }: Props) {
         onContentSizeChange={(_w, h) => setContentH(h)}
       >
         <Text style={[styles.date, { color: theme.textLight }]}>
-          {t("terms.lastUpdated")}
+          {t("terms.lastUpdated", { date: TERMS_LAST_UPDATED[locale] })}
         </Text>
 
         {SECTIONS.map((s) => (

@@ -13,11 +13,13 @@ export function setUnauthorizedHandler(handler: () => void): void {
   onUnauthorized = handler;
 }
 
-// Login/register also return 401 (bad credentials) — that must not wipe the
-// session of whoever is currently logged in.
+// Endpoints that don't require a live session. A 401 from any of these means
+// "these credentials are wrong", not "your session expired", so it must not
+// wipe the session of whoever is currently logged in.
 const AUTH_ENDPOINTS: string[] = [
   API_ENDPOINTS.AUTH.LOGIN,
   API_ENDPOINTS.AUTH.REGISTER,
+  API_ENDPOINTS.AUTH.RESEND_VERIFICATION,
 ];
 
 // ─── Base fetch wrapper ──────────────────────

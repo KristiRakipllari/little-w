@@ -150,6 +150,26 @@ export default function ParentDashboardScreen({
 
   const refreshSubscription = useParentStore((s) => s.refreshSubscription);
 
+  // ── Email verification notice ──
+  // Lives here, behind the grown-up gate, so a child never sees account
+  // plumbing. Only shown when the server can actually send mail — otherwise
+  // nobody could act on it.
+  const parentUser = useParentStore((s) => s.user);
+  const verificationEnforced = useParentStore((s) => s.verificationEnforced);
+  const resendVerification = useParentStore((s) => s.resendVerification);
+  const [verifyResend, setVerifyResend] = useState<"idle" | "sent" | "error">("idle");
+  const showVerifyBanner =
+    verificationEnforced && !!parentUser && !parentUser.email_verified;
+
+  const handleResendVerification = async () => {
+    try {
+      await resendVerification(locale);
+      setVerifyResend("sent");
+    } catch {
+      setVerifyResend("error");
+    }
+  };
+
   const handleRestore = async () => {
     const result = await restorePurchases();
     let message: string;
@@ -298,6 +318,32 @@ export default function ParentDashboardScreen({
         <Text style={[styles.subHello, { color: theme.textLight }]}>
           {t("parentDashboard.subHello")}
         </Text>
+
+        {/* Unverified email — advisory, never blocking. The soft secondary
+            pairing keeps it calm; this route is reachable from child mode. */}
+        {showVerifyBanner && (
+          <Card t={theme} style={styles.verifyCard}>
+            <Text style={[styles.verifyTitle, { color: theme.textDark }]}>
+              {t("auth.verifyBannerTitle")}
+            </Text>
+            <Text style={[styles.verifyDesc, { color: theme.textLight }]}>
+              {t("auth.verifyBannerDesc")}
+            </Text>
+            <TouchableOpacity
+              onPress={handleResendVerification}
+              accessibilityRole="button"
+              style={styles.verifyAction}
+            >
+              <Text style={[styles.verifyActionText, { color: theme.primaryDeep }]}>
+                {verifyResend === "sent"
+                  ? t("auth.verifyResendSent")
+                  : verifyResend === "error"
+                  ? t("auth.verifyResendError")
+                  : t("auth.verifyResend")}
+              </Text>
+            </TouchableOpacity>
+          </Card>
+        )}
 
         {/* Reading time chart */}
         <Card t={theme} style={styles.chartCard}>
@@ -683,6 +729,28 @@ const styles = StyleSheet.create({
   chartCard: {
     padding: 18,
     marginBottom: 16,
+  },
+  verifyCard: {
+    padding: 18,
+    marginBottom: 16,
+  },
+  verifyTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    marginBottom: 6,
+  },
+  verifyDesc: {
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 20,
+  },
+  verifyAction: {
+    marginTop: 12,
+    paddingVertical: 4,
+  },
+  verifyActionText: {
+    fontSize: 14,
+    fontWeight: "700",
   },
   chartHeader: {
     flexDirection: "row",

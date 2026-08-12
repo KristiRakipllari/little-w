@@ -6,6 +6,9 @@ export default function Home() {
       <ul>
         <li>POST /api/auth/login</li>
         <li>POST /api/auth/register</li>
+        <li>GET /api/auth/me</li>
+        <li>GET,POST /api/auth/verify</li>
+        <li>POST /api/auth/resend-verification</li>
         <li>GET /api/stories</li>
         <li>POST /api/stories</li>
         <li>GET /api/stories/:id</li>

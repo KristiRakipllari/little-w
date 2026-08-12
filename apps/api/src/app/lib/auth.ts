@@ -76,8 +76,13 @@ export async function getAuthUser(req: NextRequest): Promise<User | null> {
   if (!payload?.id) return null;
 
   const user = await queryOne<User>(
+    // Every column of User must be listed here. A column added to the type
+    // but missed here arrives as undefined on every authenticated request,
+    // which typechecks fine and fails silently at runtime.
     `SELECT id, email, name, role, trial_used,
             entitlement, entitlement_expires_at, entitlement_store,
+            email_verified,
+            consent_version, consent_accepted_at, consent_guardian_confirmed,
             created_at, updated_at
      FROM users WHERE id = $1`,
     [payload.id]
@@ -121,6 +126,28 @@ export async function requireStaff(req: NextRequest): Promise<User> {
   const user = await requireAuth(req);
   if (user.role !== "admin" && user.role !== "editor") {
     throw new Error("Forbidden: staff access required");
+  }
+  return user;
+}
+
+/**
+ * Nothing calls this yet, deliberately.
+ *
+ * Today an unverified account grants no privilege worth gating —
+ * hasActiveEntitlement is the only premium gate and reads only
+ * users.entitlement, and every other piece of per-user data lives on the
+ * device. This exists so the first genuinely account-scoped endpoint (synced
+ * progress, a parent-facing export, anything costing resources per account)
+ * has a real server-side gate to reach for, instead of email_verified staying
+ * a decoration enforced only by the client.
+ *
+ * Do NOT wire this into entitlement checks or the RevenueCat webhook: a
+ * completed purchase must always be honoured, whatever the mailbox did.
+ */
+export async function requireVerified(req: NextRequest): Promise<User> {
+  const user = await requireAuth(req);
+  if (!user.email_verified) {
+    throw new Error("Forbidden: email not verified");
   }
   return user;
 }

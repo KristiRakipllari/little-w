@@ -337,3 +337,47 @@ Bugs found by the user in real use after the review, both fixed. Navigation-stac
 
 ### N2 — ✅ Fixed · Finished stories reopened on the last page
 `apps/mobile/src/screens/child/StoryPlayer.tsx`. Resume used only `lastReadPage`, saved on every page turn, with no concept of "finished" — so tapping through to the final page (6/6) saved page 6, and reopening resumed there. **Fix:** a once-per-mount resume resolver (runs during render, before first paint — no flash) treats *saved page ≥ last page* as finished → start at page 1; a lower saved page still resumes mid-story (e.g. 5/6 → page 5). The home "Continue" card is unaffected and still shows full progress for a finished story (accurate), since the saved page isn't rewritten on finish.
+
+---
+
+## Email verification + server-side consent (2026-08-12)
+
+Parent accounts now verify their email via a link. Scope is deliberately narrow: **anonymous free use is untouched** — no account is required to use the app, and COPPA onboarding stays device-local and pre-account.
+
+### What it is (and is not)
+Verification is **not** a security gate. `hasActiveEntitlement` is the only server-side premium gate and reads solely `users.entitlement`, so an unverified account grants zero privilege. Its real job is **account recovery**: a parent who subscribes with a typo'd address cannot use the password-reset flow later, and the only remedy is manual DB surgery. So the gate sits before *starting* a purchase, catching the typo before money changes hands.
+
+Two protections, one of which needs no mail infrastructure at all:
+- **Confirm-email field** on the register form — blocks submit on a mismatch. Works with the console stub.
+- **The verification link** — single-use, 24h TTL, plus resend from the parent area.
+
+Constraints held deliberately:
+- `hasActiveEntitlement` and the RevenueCat webhook are **never** gated on `email_verified`. A completed purchase is always honoured; withholding paid content over a bounced mailbox is a refund magnet and an App Store review risk.
+- The pre-purchase gate is **client-side, and that's acceptable** — the purchase runs entirely through the on-device RevenueCat SDK, so there is no server checkpoint. Bypassing it only lets someone pay us with an unverified address.
+- The gate is **self-disabling**: `GET /api/auth/me` returns `verification_enforced: isEmailConfigured()`. With no SMTP nobody could verify, so nothing is gated. It switches on by itself when real credentials are set. The client defaults it to `false` (fails open) so an unreachable API never blocks a purchase.
+- `requireVerified()` exists in `auth.ts` but is **intentionally unused** — it's there so the first genuinely account-scoped endpoint has a real server gate.
+
+### Token design
+256-bit `randomBytes`, base64url, stored as **SHA-256 hex — not bcrypt**. The link carries no email, so the row is found *by the token*; bcrypt salts per row, making an indexed lookup impossible and forcing a compare against every outstanding row. bcrypt's cost protects low-entropy secrets (the 6-digit reset code needs it); a 256-bit random token has no dictionary to attack.
+
+`GET /api/auth/verify` renders a confirm button and **mutates nothing**; `POST` consumes. Email security scanners (SafeLinks, Proofpoint, Gmail) pre-fetch links and would otherwise silently burn a single-use token. Consumption is atomic via `UPDATE … WHERE used_at IS NULL … RETURNING`, and an already-verified account re-showing the success page absorbs double-clicks.
+
+### Server-side consent record
+`users.consent_version / consent_accepted_at / consent_guardian_confirmed`, captured at registration and backfilled at next login while still NULL (first record wins, never overwritten). Previously consent existed **only** in AsyncStorage — lost on reinstall, tied to no account, so there was no durable evidence any account holder accepted the terms of a children's app.
+
+Honest limits: it is **client-asserted** (a record of what the device reported, not independent proof); it covers **account holders only** — anonymous users are deliberately not recorded, since identifying them is the opposite of a COPPA-conscious design; and consent may predate the account or, on a shared device, come from a different person.
+
+`CONSENT_VERSION` moved to `packages/shared` alongside `POLICY_LAST_UPDATED` / `TERMS_LAST_UPDATED` (both `Record<SupportedLocale, string>`, so updating one language without the other is a compile error). **Bump `CONSENT_VERSION` whenever either document's text changes** — it's what gets stored against an account, so it only means anything if it can't drift from the text.
+
+### Email delivery — production migration
+- **Today:** Mailtrap **Sandbox** (`sandbox.smtp.mailtrap.io`). Captures everything, delivers to nobody. Correct for dev, unusable in production.
+- **To go live:** switch to Mailtrap **Email Sending** (`live.smtp.mailtrap.io`) and **verify a real sending domain**. The demo domain (`demomailtrap.co`) only permits sending to your own Mailtrap account address, so it cannot serve real users.
+- `SMTP_FROM` must be an address on the verified domain, or mail is rejected.
+- `APP_PUBLIC_URL` must be the deployed API origin. Left as localhost, every link in every real email is dead on arrival.
+- **These are enforced, not remembered.** With `NODE_ENV=production` the API refuses to boot on a sandbox `SMTP_HOST`, a missing `SMTP_HOST`, or a localhost `APP_PUBLIC_URL` (`lib/email.ts`, `lib/verification.ts` — same fail-fast pattern as the `JWT_SECRET` guard). A bad deploy fails loudly at startup instead of silently swallowing every email and blocking all subscriptions.
+- Still worth doing once: a real end-to-end signup on staging. The guards prove the config is *plausible*, not that mail lands.
+- **RL3 applies here too** — `rateLimit` is per-process, so the 3/15min resend cap is per instance. Matters more now that a trigger sends real mail with real cost.
+
+### Known gaps (not fixed here)
+- **Password reset does not invalidate sessions.** A stolen JWT stays valid up to 7 days after the victim resets. Needs `password_changed_at` checked against the JWT `iat`. Deliberately deferred as its own change.
+- **`register`'s 409 "Email already registered" is an enumeration oracle**, now slightly sharpened (a probe also mails the real owner). Bounded by the 5/15min per-IP limit; accepted rather than fixed, since the alternative is a materially different registration UX.

@@ -181,6 +181,24 @@ npm run db:seed
 
 ---
 
+## Email Verification
+
+Applies to **parent accounts only**. Anonymous free use is completely unaffected — no account is ever required to read the free stories, and onboarding consent stays on the device.
+
+Registration emails a verification link. It is single-use, expires after 24 hours, and opens a small web page served by the API (there is no deep-link scheme, so the link deliberately does not try to open the app). The `GET` only renders a confirm button; the `POST` behind it does the actual verification, so email security scanners that pre-fetch links can't silently burn the token.
+
+**What it gates:** only *starting* a subscription. It is a typo guard, not a security boundary — an unverified account grants no server-side privilege. The point is that a parent who pays has an address that a future password reset can actually reach. A completed purchase is always honoured regardless of verification state.
+
+**Two protections, one of which needs no email at all:**
+- The register form asks for the address twice and blocks submit on a mismatch.
+- The verification link itself, plus a resend option in the parent area.
+
+**Enforcement is automatic.** When SMTP isn't configured, `GET /api/auth/me` reports `verification_enforced: false` and the app gates nothing — because nobody could verify. It switches on by itself once real SMTP credentials are set.
+
+In development, mail goes to the Mailtrap Sandbox inbox (see `.env.example`); with no credentials it falls back to printing to the API server console. Either way, copy the link from there to complete the flow.
+
+---
+
 ## Admin Panel (web)
 
 Content management (stories, pages, uploads) lives in `apps/admin` — a standalone Next.js web app. The mobile app has no admin surface.
@@ -258,7 +276,11 @@ Stories are categorized into 3 levels with distinct visual styling:
 
 ### Auth
 - `POST /api/auth/login` - Login (returns JWT)
-- `POST /api/auth/register` - Register new user (admin only)
+- `POST /api/auth/register` - Register a parent account (staff roles are admin-only)
+- `GET /api/auth/me` - Current user + whether email verification is enforceable
+- `GET,POST /api/auth/verify` - Email verification link (GET renders, POST confirms)
+- `POST /api/auth/resend-verification` - Email a fresh verification link
+- `POST /api/auth/forgot-password` → `verify-reset-code` → `reset-password` - 6-digit reset code
 
 ### Stories
 - `GET /api/stories` - List all published stories

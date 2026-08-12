@@ -23,6 +23,30 @@ const SMTP_PASS = process.env.SMTP_PASS;
 const SMTP_FROM =
   process.env.SMTP_FROM || SMTP_USER || "Little World <no-reply@littleworld.app>";
 
+// A sandbox transport accepts every message and delivers none of them. In
+// production that is indistinguishable from working — mail "sends", nobody
+// receives it, and because email verification is enforced whenever SMTP is
+// configured, no parent could ever verify or subscribe. The failure would
+// surface only as silence. Fail fast instead, same as JWT_SECRET.
+//
+// Skipped during `next build`: the build runs with NODE_ENV=production but
+// has no deployment env, so enforcing here would block anyone building
+// without SMTP credentials. The check still runs when the built server
+// actually loads this module.
+if (
+  process.env.NODE_ENV === "production" &&
+  process.env.NEXT_PHASE !== "phase-production-build"
+) {
+  if (!SMTP_HOST) {
+    throw new Error("SMTP_HOST must be set in production");
+  }
+  if (/sandbox/i.test(SMTP_HOST)) {
+    throw new Error(
+      "Refusing to start: SMTP_HOST is a sandbox/testing host, which delivers no mail. Use a real sending host in production."
+    );
+  }
+}
+
 let transporter: nodemailer.Transporter | null = null;
 if (SMTP_HOST) {
   transporter = nodemailer.createTransport({
@@ -41,13 +65,9 @@ export function isEmailConfigured(): boolean {
 export async function sendEmail(msg: EmailMessage): Promise<void> {
   if (!transporter) {
     // Dev stub: no SMTP configured — print the message so the flow can be
-    // exercised end-to-end. Never do this in production; the guard below warns.
-    if (process.env.NODE_ENV === "production") {
-      console.warn(
-        "[email] SMTP is not configured in production — email not sent to",
-        msg.to
-      );
-    }
+    // exercised end-to-end. Unreachable in production: the boot guard above
+    // refuses to start without a real sending host.
+
     console.log(
       `\n[email:stub] To: ${msg.to}\n[email:stub] Subject: ${msg.subject}\n[email:stub] ${msg.text}\n`
     );

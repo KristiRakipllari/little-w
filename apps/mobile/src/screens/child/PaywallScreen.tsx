@@ -25,8 +25,14 @@ interface Props {
 export default function PaywallScreen({ onPurchased, onLogin, onClose }: Props) {
   const themeId = useAppStore((s) => s.themeId);
   const theme = getThemeById(themeId);
-  const { t } = useTranslation();
-  const { user, trialUsed, refreshSubscription } = useParentStore();
+  const { t, locale } = useTranslation();
+  const {
+    user,
+    trialUsed,
+    refreshSubscription,
+    verificationEnforced,
+    resendVerification,
+  } = useParentStore();
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   // The paywall is reachable from child mode, and our terms promise that
@@ -45,6 +51,27 @@ export default function PaywallScreen({ onPurchased, onLogin, onClose }: Props) 
       mounted = false;
     };
   }, []);
+
+  // Typo guard, NOT a security boundary. The purchase runs entirely through
+  // the on-device RevenueCat SDK, so there is no server checkpoint to enforce
+  // this at — and bypassing it only lets someone pay us with an unverified
+  // address. Its real job is stopping a parent from subscribing with an email
+  // they can never receive a password reset at.
+  //
+  // Only active when the server can actually send mail: if it can't, nobody
+  // could ever verify, so gating here would block every purchase.
+  const needsVerification =
+    verificationEnforced && !!user && !user.email_verified;
+
+  const handleVerifyFirst = async () => {
+    setPurchaseError(t("paywall.verifyRequired"));
+    try {
+      await resendVerification(locale);
+    } catch {
+      // The message above is the important part; a failed resend can be
+      // retried from the parent area.
+    }
+  };
 
   // Preferred path: the remote RevenueCat Paywall (edited in the dashboard,
   // handles intro-offer eligibility and restore itself). If none is
@@ -162,7 +189,13 @@ export default function PaywallScreen({ onPurchased, onLogin, onClose }: Props) 
         )}
 
         {user ? (
-          <Btn t={theme} disabled={purchasing} onPress={() => setGateVisible(true)}>
+          <Btn
+            t={theme}
+            disabled={purchasing}
+            onPress={
+              needsVerification ? handleVerifyFirst : () => setGateVisible(true)
+            }
+          >
             {purchasing
               ? t("paywall.processing")
               : trialUsed

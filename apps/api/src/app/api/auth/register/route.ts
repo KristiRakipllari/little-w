@@ -2,8 +2,19 @@ import { NextRequest } from "next/server";
 import { queryOne } from "@calm-stories/db";
 import { hashPassword, signToken, requireAdmin } from "@/app/lib/auth";
 import { rateLimit } from "@/app/lib/rateLimit";
+import { parseConsent } from "@/app/lib/consent";
+import {
+  issueVerificationToken,
+  sendVerificationEmail,
+} from "@/app/lib/verification";
 import { created, error, unauthorized, serverError } from "@/app/lib/response";
-import type { User, UserRole, RegisterRequest } from "@calm-stories/shared";
+import { SUPPORTED_LOCALES } from "@calm-stories/shared";
+import type {
+  User,
+  UserRole,
+  RegisterRequest,
+  SupportedLocale,
+} from "@calm-stories/shared";
 
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -60,12 +71,39 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await hashPassword(body.password);
 
+    // Client-asserted snapshot of the on-device onboarding consent. Optional
+    // by design — older builds omit it and the columns are nullable.
+    const consent = parseConsent(body.consent);
+
     const user = await queryOne<User>(
-      `INSERT INTO users (email, password_hash, name, role)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, email, name, role, trial_used, created_at, updated_at`,
-      [body.email.toLowerCase(), passwordHash, name, role]
+      `INSERT INTO users (email, password_hash, name, role,
+                          consent_version, consent_accepted_at, consent_guardian_confirmed)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, email, name, role, trial_used, email_verified,
+                 consent_version, consent_accepted_at, consent_guardian_confirmed,
+                 created_at, updated_at`,
+      [
+        body.email.toLowerCase(),
+        passwordHash,
+        name,
+        role,
+        consent.version,
+        consent.accepted_at,
+        consent.guardian_confirmed,
+      ]
     );
+
+    // Verification is a convenience, not a precondition: the account exists
+    // and the caller is logged in regardless. A dead SMTP host must never turn
+    // a successful registration into a 500 — the user can always resend.
+    try {
+      const locale: SupportedLocale =
+        SUPPORTED_LOCALES.find((l) => l === body.locale) ?? "en";
+      const verificationToken = await issueVerificationToken(user!.id);
+      await sendVerificationEmail(user!.email, verificationToken, locale);
+    } catch (err) {
+      console.error("[register] verification email failed:", err);
+    }
 
     const token = signToken(user!);
 

@@ -36,7 +36,7 @@
   },
   "policy": {
     "headerTitle": "Politika e Privatësisë",
-    "lastUpdated": "Përdituar së fundi: Mars 2026",
+    "lastUpdated": "Përdituar së fundi: {{date}}",
     "noTrackingTitle": "Pa ndjekje",
     "noTrackingBody": "Ne nuk mbledhim, shesim ose ndajmë informacione personale. Përdorimi i fëmijës tuaj mbetet në këtë pajisje.",
     "noAdsTitle": "Pa reklama",
@@ -49,7 +49,7 @@
   },
   "terms": {
     "headerTitle": "Kushtet e Shërbimit",
-    "lastUpdated": "Përdituar së fundi: Korrik 2026",
+    "lastUpdated": "Përdituar së fundi: {{date}}",
     "agreementTitle": "Marrëveshja",
     "agreementBody": "Little World është krijuar për fëmijët, por menaxhohet nga një prind ose kujdestar. Duke përdorur aplikacionin, një i rritur i pranon këto kushte në emër të fëmijës.",
     "licenseTitle": "Përdorimi i aplikacionit",
@@ -98,6 +98,8 @@
     "storyCountPlural": "{{count}} tregime",
     "premium": "Premium",
     "emptyText": "Asnjë tregim ende. Kthehuni së shpejti!",
+    "offlineText": "Nuk po arrijmë t'i marrim tregimet për momentin.",
+    "retry": "Provo përsëri",
     "favorites": "Të preferuarat",
     "addFavorite": "Shto te të preferuarat",
     "removeFavorite": "Hiq nga të preferuarat"
@@ -135,7 +137,8 @@
     "processing": "Një moment…",
     "purchaseFailed": "Diçka shkoi keq me blerjen. Ju lutemi provoni përsëri.",
     "loginToContinue": "Identifikohu për të vazhduar",
-    "maybeLater": "Ndoshta më vonë"
+    "maybeLater": "Ndoshta më vonë",
+    "verifyRequired": "Ju lutemi verifikoni emailin përpara se të abonoheni."
   },
   "settings": {
     "heading": "Cilësime",
@@ -264,7 +267,17 @@
     "resetSuccessTitle": "Fjalëkalimi u përditësua",
     "resetSuccessDesc": "Fjalëkalimi juaj u ndryshua. Tani mund të identifikoheni me të.",
     "resetError": "Ky kod është i pavlefshëm ose ka skaduar. Ju lutemi kërkoni një të ri.",
-    "backToLogin": "Kthehu te identifikimi"
+    "backToLogin": "Kthehu te identifikimi",
+    "confirmEmailLabel": "Konfirmo emailin",
+    "confirmEmailMismatch": "Adresat e emailit nuk përputhen ende.",
+    "verifyTitle": "Kontrollo emailin",
+    "verifyDesc": "Dërguam një lidhje verifikimi te {{email}}. Shtypeni për të konfirmuar adresën tuaj.",
+    "verifyResend": "Ridërgo emailin e verifikimit",
+    "verifyResendSent": "Emaili i verifikimit u dërgua",
+    "verifyResendError": "Nuk u dërgua dot tani. Ju lutemi provoni sërish pas pak.",
+    "verifyContinue": "Vazhdo",
+    "verifyBannerTitle": "Emaili nuk është verifikuar",
+    "verifyBannerDesc": "Verifikoni emailin që të mund të rikuperoni llogarinë dhe abonimin më vonë."
   },
   "tabs": {
     "stories": "Tregime",

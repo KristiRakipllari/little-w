@@ -26,31 +26,149 @@ interface Props {
 export default function Login({ onBack, onSuccess, onForgotPassword }: Props) {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const [password, setPassword] = useState("");
-  const { login, register, isLoading, error, clearError } = useParentStore();
+  // Shown after registering, in place of the form.
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<"idle" | "sent" | "error">("idle");
+  const {
+    login,
+    register,
+    resendVerification,
+    isLoading,
+    error,
+    clearError,
+  } = useParentStore();
   const themeId = useAppStore((s) => s.themeId);
+  const consentData = useAppStore((s) => s.consentData);
   const theme = getThemeById(themeId);
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+
+  // The device's onboarding consent, sent so the server holds an
+  // account-linked record. Read here rather than inside parentStore to keep
+  // the stores independent of each other.
+  const consentPayload = consentData
+    ? {
+        version: consentData.version,
+        accepted_at: consentData.acceptedAt,
+        guardian_confirmed: consentData.guardianConfirmed,
+      }
+    : undefined;
+
+  // Registering only: the second address must match. This is the typo guard
+  // that works with no email infrastructure at all — a wrong address here is
+  // what later locks a paying parent out of their own account.
+  const emailsMatch =
+    email.trim().toLowerCase() === confirmEmail.trim().toLowerCase();
+  const showMismatch =
+    tab === "register" && confirmTouched && confirmEmail.length > 0 && !emailsMatch;
+  const canSubmit =
+    !!email.trim() &&
+    !!password.trim() &&
+    (tab === "login" || (!!confirmEmail.trim() && emailsMatch));
 
   const handleSubmit = async () => {
-    if (!email.trim() || !password.trim()) return;
+    if (!canSubmit) return;
     clearError();
     if (tab === "login") {
-      await login({ email: email.trim(), password });
+      await login({ email: email.trim(), password, consent: consentPayload });
+      if (useParentStore.getState().user) onSuccess();
     } else {
-      await register({ email: email.trim(), password });
+      await register({
+        email: email.trim(),
+        password,
+        locale,
+        consent: consentPayload,
+      });
+      // Don't leave immediately — show the address back so a typo that made it
+      // past the confirm field still has one last chance to be noticed.
+      if (useParentStore.getState().user) setRegisteredEmail(email.trim());
     }
-    // If login/register succeeded (no error thrown, user is set)
-    const { user } = useParentStore.getState();
-    if (user) {
-      onSuccess();
+  };
+
+  const handleResend = async () => {
+    setResendState("idle");
+    try {
+      await resendVerification(locale);
+      setResendState("sent");
+    } catch {
+      setResendState("error");
     }
   };
 
   const switchTab = (newTab: "login" | "register") => {
     setTab(newTab);
+    setConfirmEmail("");
+    setConfirmTouched(false);
     clearError();
   };
+
+  // ── Check your email (after registering) ──
+  // Continue is never blocked: the account exists and works, verification
+  // only gates starting a subscription.
+  if (registeredEmail) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.bg }]}>
+        <ScreenHeader title={t("auth.headerTitle")} t={theme} onBack={onBack} />
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.iconCircle, { backgroundColor: theme.primarySoft }]}>
+            <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M4 6h16v12H4z"
+                stroke={theme.primaryDeep}
+                strokeWidth={2}
+                strokeLinejoin="round"
+              />
+              <Path
+                d="M4 7l8 6 8-6"
+                stroke={theme.primaryDeep}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </View>
+
+          <Text style={[styles.heading, { color: theme.textDark }]}>
+            {t("auth.verifyTitle")}
+          </Text>
+          <Text style={[styles.subheading, { color: theme.textLight }]}>
+            {t("auth.verifyDesc", { email: registeredEmail })}
+          </Text>
+
+          <TouchableOpacity
+            onPress={handleResend}
+            style={styles.forgotBtn}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.forgotText, { color: theme.primaryDeep }]}>
+              {resendState === "sent"
+                ? t("auth.verifyResendSent")
+                : resendState === "error"
+                ? t("auth.verifyResendError")
+                : t("auth.verifyResend")}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={onSuccess}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            style={[styles.submitBtn, { backgroundColor: theme.primary, marginTop: 20 }]}
+          >
+            <Text style={[styles.submitText, { color: theme.onPrimary }]}>
+              {t("auth.verifyContinue")}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -170,6 +288,44 @@ export default function Login({ onBack, onSuccess, onForgotPassword }: Props) {
               autoComplete="email"
             />
 
+            {tab === "register" && (
+              <>
+                <Text style={[styles.label, { color: theme.textDark }]}>
+                  {t("auth.confirmEmailLabel")}
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.surface,
+                      borderColor: showMismatch ? theme.accent : theme.border,
+                      color: theme.textDark,
+                    },
+                  ]}
+                  placeholder={t("auth.emailPlaceholder")}
+                  placeholderTextColor={theme.textLight}
+                  value={confirmEmail}
+                  onChangeText={(text) => {
+                    setConfirmEmail(text);
+                    clearError();
+                  }}
+                  // Only judge the match once they've moved on — flagging a
+                  // mismatch mid-typing accuses the user of an error they are
+                  // still in the middle of not making.
+                  onBlur={() => setConfirmTouched(true)}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  // Deliberately no autoComplete: autofill would defeat the
+                  // whole point of typing it a second time.
+                />
+                {showMismatch && (
+                  <Text style={[styles.mismatchText, { color: theme.textLight }]}>
+                    {t("auth.confirmEmailMismatch")}
+                  </Text>
+                )}
+              </>
+            )}
+
             <Text style={[styles.label, { color: theme.textDark }]}>
               {t("auth.passwordLabel")}
             </Text>
@@ -209,13 +365,13 @@ export default function Login({ onBack, onSuccess, onForgotPassword }: Props) {
           {/* Submit button */}
           <TouchableOpacity
             onPress={handleSubmit}
-            disabled={isLoading || !email.trim() || !password.trim()}
+            disabled={isLoading || !canSubmit}
             activeOpacity={0.85}
             accessibilityRole="button"
             style={[
               styles.submitBtn,
               { backgroundColor: theme.primary },
-              (isLoading || !email.trim() || !password.trim()) && styles.submitDisabled,
+              (isLoading || !canSubmit) && styles.submitDisabled,
             ]}
           >
             {isLoading ? (
@@ -313,6 +469,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     minHeight: 52,
+  },
+  mismatchText: {
+    fontSize: 13,
+    fontWeight: "500",
+    marginTop: 6,
   },
   forgotBtn: {
     alignSelf: "flex-end",

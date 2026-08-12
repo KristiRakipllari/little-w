@@ -36,7 +36,7 @@
   },
   "policy": {
     "headerTitle": "Privacy Policy",
-    "lastUpdated": "Last updated: Mar 2026",
+    "lastUpdated": "Last updated: {{date}}",
     "noTrackingTitle": "No tracking",
     "noTrackingBody": "We do not collect, sell, or share personal information. Your child's usage stays on this device.",
     "noAdsTitle": "No ads",
@@ -49,7 +49,7 @@
   },
   "terms": {
     "headerTitle": "Terms of Service",
-    "lastUpdated": "Last updated: Jul 2026",
+    "lastUpdated": "Last updated: {{date}}",
     "agreementTitle": "Agreement",
     "agreementBody": "Little World is made for children but managed by a parent or guardian. By using the app, a grown-up accepts these terms on the child's behalf.",
     "licenseTitle": "Using the app",
@@ -98,6 +98,8 @@
     "storyCountPlural": "{{count}} stories",
     "premium": "Premium",
     "emptyText": "No stories yet. Check back soon!",
+    "offlineText": "We can't reach the stories right now.",
+    "retry": "Try again",
     "favorites": "Favourites",
     "addFavorite": "Add to favourites",
     "removeFavorite": "Remove from favourites"
@@ -135,7 +137,8 @@
     "processing": "One moment…",
     "purchaseFailed": "Something went wrong with the purchase. Please try again.",
     "loginToContinue": "Log in to continue",
-    "maybeLater": "Maybe later"
+    "maybeLater": "Maybe later",
+    "verifyRequired": "Please verify your email before subscribing."
   },
   "settings": {
     "heading": "Settings",
@@ -264,7 +267,17 @@
     "resetSuccessTitle": "Password updated",
     "resetSuccessDesc": "Your password has been changed. You can now log in with it.",
     "resetError": "That code is invalid or has expired. Please request a new one.",
-    "backToLogin": "Back to log in"
+    "backToLogin": "Back to log in",
+    "confirmEmailLabel": "Confirm email",
+    "confirmEmailMismatch": "Email addresses don't match yet.",
+    "verifyTitle": "Check your email",
+    "verifyDesc": "We sent a verification link to {{email}}. Tap it to confirm your address.",
+    "verifyResend": "Resend verification email",
+    "verifyResendSent": "Verification email sent",
+    "verifyResendError": "Couldn't send it just now. Please try again shortly.",
+    "verifyContinue": "Continue",
+    "verifyBannerTitle": "Email not verified",
+    "verifyBannerDesc": "Verify your email so you can recover your account and subscription later."
   },
   "tabs": {
     "stories": "Stories",

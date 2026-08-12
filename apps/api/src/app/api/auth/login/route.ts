@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { queryOne } from "@calm-stories/db";
 import { hashPassword, verifyPassword, isLegacyHash, signToken } from "@/app/lib/auth";
 import { rateLimit, clearRateLimit } from "@/app/lib/rateLimit";
+import { parseConsent, hasConsent } from "@/app/lib/consent";
 import { success, error, serverError } from "@/app/lib/response";
 import type { User, LoginRequest } from "@calm-stories/shared";
 
@@ -56,6 +57,32 @@ export async function POST(req: NextRequest) {
         [user.id]
       );
       if (consumed) user.trial_used = true;
+    }
+
+    // Backfill consent for accounts created before it was captured. Written
+    // only while the columns are still null — the first record captured is the
+    // one with evidentiary value, so a later login never overwrites it.
+    // Failure here must never fail the login.
+    const consent = parseConsent(body.consent);
+    if (hasConsent(consent)) {
+      try {
+        const filled = await queryOne<{ consent_version: number | null }>(
+          `UPDATE users
+           SET consent_version = $1,
+               consent_accepted_at = $2,
+               consent_guardian_confirmed = $3
+           WHERE id = $4 AND consent_version IS NULL
+           RETURNING consent_version`,
+          [consent.version, consent.accepted_at, consent.guardian_confirmed, user.id]
+        );
+        if (filled) {
+          user.consent_version = consent.version;
+          user.consent_accepted_at = consent.accepted_at?.toISOString() ?? null;
+          user.consent_guardian_confirmed = consent.guardian_confirmed;
+        }
+      } catch (err) {
+        console.error("[login] consent backfill failed:", err);
+      }
     }
 
     const { password_hash, ...safeUser } = user;

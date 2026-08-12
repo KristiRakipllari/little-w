@@ -18,6 +18,8 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Rect, Path } from "react-native-svg";
 import Card from "@/components/Card";
+import Btn from "@/components/Btn";
+import { CONFIG } from "@/config";
 import { useAppStore } from "@/store/appStore";
 import { useParentStore } from "@/store/parentStore";
 import { useTranslation } from "@/i18n";
@@ -59,7 +61,7 @@ export default function StoryList({ onStory, onPaywall }: Props) {
   const lastReadPage = useAppStore((s) => s.lastReadPage);
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
-  const { stories, isLoading, fetchStories } = useStoryStore();
+  const { stories, isLoading, error, fetchStories } = useStoryStore();
   const { user, isSubscribed } = useParentStore();
   const favoriteIds = useFavoritesStore((s) => s.favoriteIds);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
@@ -117,6 +119,32 @@ export default function StoryList({ onStory, onPaywall }: Props) {
     return (
       <View style={[styles.center, { backgroundColor: theme.bg }]}>
         <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
+
+  // A failed fetch with nothing cached used to fall through to the list's
+  // "No stories yet" empty state, which reads as "there is no content" when
+  // the real cause is "we couldn't reach the server". Say which, and offer a
+  // way out that doesn't require closing the app.
+  if (error && stories.length === 0) {
+    return (
+      <View style={[styles.center, { backgroundColor: theme.bg }]}>
+        <Text style={[styles.offlineText, { color: theme.textDark }]}>
+          {t("storyList.offlineText")}
+        </Text>
+        {__DEV__ && (
+          // Dev builds only: the underlying reason, so a failing device can be
+          // diagnosed without attaching a debugger. Never shown to children.
+          <Text style={[styles.offlineDetail, { color: theme.textLight }]}>
+            {CONFIG.API_URL}
+            {"\n"}
+            {error}
+          </Text>
+        )}
+        <Btn t={theme} onPress={() => fetchStories()} fullWidth={false}>
+          {t("storyList.retry")}
+        </Btn>
       </View>
     );
   }
@@ -633,4 +661,18 @@ const styles = StyleSheet.create({
   // Empty
   empty: { paddingVertical: 48, alignItems: "center" },
   emptyText: { fontSize: 15, fontWeight: "500" },
+  offlineText: {
+    fontSize: 17,
+    fontWeight: "600",
+    textAlign: "center",
+    paddingHorizontal: 32,
+    marginBottom: 12,
+  },
+  offlineDetail: {
+    fontSize: 12,
+    fontWeight: "500",
+    textAlign: "center",
+    paddingHorizontal: 24,
+    marginBottom: 20,
+  },
 });

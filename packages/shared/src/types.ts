@@ -15,8 +15,25 @@ export interface User {
   entitlement?: string | null;
   entitlement_expires_at?: string | null;
   entitlement_store?: string | null;
+  // False until the parent clicks the link emailed at registration. Not a
+  // privilege flag — it gates only the START of a purchase, so a paying
+  // customer always has a working address for account recovery later.
+  email_verified: boolean;
+  // Server-side record of the on-device COPPA consent, captured at
+  // registration (or backfilled at next login). Null for accounts created
+  // before capture existed. Client-asserted, not independently verified.
+  consent_version?: number | null;
+  consent_accepted_at?: string | null;
+  consent_guardian_confirmed?: boolean | null;
   created_at: string;
   updated_at: string;
+}
+
+// Snapshot of the device's onboarding consent, sent with register/login.
+export interface ConsentRecord {
+  version: number;
+  accepted_at: string;
+  guardian_confirmed: boolean;
 }
 
 export interface AuthTokens {
@@ -27,6 +44,9 @@ export interface AuthTokens {
 export interface LoginRequest {
   email: string;
   password: string;
+  // Backfills the consent columns when they are still null — an account
+  // created before consent capture existed gets its record on next login.
+  consent?: ConsentRecord;
 }
 
 export interface RegisterRequest {
@@ -35,6 +55,22 @@ export interface RegisterRequest {
   // Optional — the API defaults it to the email prefix when omitted.
   name?: string;
   role?: UserRole;
+  // Language for the verification email and the page its link opens.
+  locale?: SupportedLocale;
+  consent?: ConsentRecord;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
+  locale?: SupportedLocale;
+}
+
+// GET /api/auth/me. `verification_enforced` mirrors whether the API can
+// actually send mail: when it can't, nobody could ever verify, so the client
+// must not gate anything on it.
+export interface MeResponse {
+  user: User;
+  verification_enforced: boolean;
 }
 
 export interface ForgotPasswordRequest {

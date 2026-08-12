@@ -1,16 +1,21 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DEFAULT_THEME_ID, THEMES } from "@calm-stories/shared";
+import {
+  DEFAULT_THEME_ID,
+  THEMES,
+  CONSENT_VERSION,
+} from "@calm-stories/shared";
 
 export type AgeChoice = "child" | "adult" | null;
 export type TextSize = "s" | "m" | "l";
 export type MotionPref = "slow" | "normal" | "off";
 export type Locale = "sq" | "en";
 
-// Bump this whenever the Privacy Policy / Terms / consent copy changes in a way
-// that requires users to review and re-accept. Onboarding re-runs when the
-// stored consent version is older than this.
-export const CONSENT_VERSION = 1;
+// Re-exported for existing callers. The constant itself now lives in
+// @calm-stories/shared next to the policy/terms dates it must move with —
+// the version is stored server-side against an account, so it only means
+// something if it can't drift from the document text.
+export { CONSENT_VERSION };
 
 export interface ConsentData {
   version: number;

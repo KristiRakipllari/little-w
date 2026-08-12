@@ -4,7 +4,12 @@ import { CONFIG } from "@/config";
 import * as parent from "@/services/parent";
 import { setUnauthorizedHandler } from "@/services/client";
 import * as purchases from "@/services/purchases";
-import type { User, LoginRequest } from "@calm-stories/shared";
+import type {
+  User,
+  LoginRequest,
+  RegisterRequest,
+  SupportedLocale,
+} from "@calm-stories/shared";
 
 interface ParentState {
   user: User | null;
@@ -16,13 +21,21 @@ interface ParentState {
   // True once the account's free week has been consumed (7-day session
   // expired). Survives logout so the paywall can stop offering the trial.
   trialUsed: boolean;
+  // Whether the server can actually send verification mail. Defaults to false
+  // and fails OPEN: if /me is unreachable we must never block a purchase over
+  // a check we couldn't perform.
+  verificationEnforced: boolean;
+  // Transient UI flag for the "sent!" confirmation after a resend.
+  verificationSent: boolean;
 
   // Actions
   login: (credentials: LoginRequest) => Promise<void>;
-  register: (credentials: LoginRequest) => Promise<void>;
+  register: (credentials: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   loadSession: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  resendVerification: (locale: SupportedLocale) => Promise<void>;
   markTrialUsed: () => void;
   clearError: () => void;
 }
@@ -82,6 +95,8 @@ export const useParentStore = create<ParentState>((set, get) => ({
   isSubscribed: false,
   hydrated: false,
   trialUsed: false,
+  verificationEnforced: false,
+  verificationSent: false,
 
   login: async (credentials) => {
     set({ isLoading: true, error: null });
@@ -162,7 +177,13 @@ export const useParentStore = create<ParentState>((set, get) => ({
     ]);
     // Detach the RevenueCat identity too (back to an anonymous customer).
     await purchases.logOutPurchases();
-    set({ user: null, token: null, error: null, isSubscribed: false });
+    set({
+      user: null,
+      token: null,
+      error: null,
+      isSubscribed: false,
+      verificationSent: false,
+    });
   },
 
   loadSession: async () => {
@@ -198,6 +219,9 @@ export const useParentStore = create<ParentState>((set, get) => ({
           .logInPurchases(user.id)
           .then(() => get().refreshSubscription())
           .catch(() => {});
+        // Same non-blocking pattern: picks up a verification completed
+        // elsewhere, and learns whether the server can enforce it at all.
+        get().refreshUser();
       } else {
         set({ trialUsed, isLoading: false, hydrated: true });
       }
@@ -213,6 +237,38 @@ export const useParentStore = create<ParentState>((set, get) => ({
       purchases.hasPremium(customerInfo) || hasServerEntitlement(get().user);
     await AsyncStorage.setItem(STORAGE_KEYS.IS_SUBSCRIBED, String(subscribed));
     set({ isSubscribed: subscribed });
+  },
+
+  // Re-reads the account from the server. This is how a parent who verified
+  // in a browser on another device sees the banner clear without logging out.
+  refreshUser: async () => {
+    const { token } = get();
+    if (!token) return;
+    try {
+      const me = await parent.fetchMe();
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.USER_DATA,
+        JSON.stringify(me.user)
+      );
+      set({ user: me.user, verificationEnforced: me.verification_enforced });
+    } catch {
+      // Offline or a server blip: keep the cached user and leave
+      // verificationEnforced alone. Failing open here is deliberate — a check
+      // we couldn't perform must never block a purchase.
+    }
+  },
+
+  resendVerification: async (locale) => {
+    const email = get().user?.email;
+    if (!email) return;
+    set({ verificationSent: false, error: null });
+    try {
+      await parent.resendVerification(email, locale);
+      set({ verificationSent: true });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+      throw err;
+    }
   },
 
   markTrialUsed: () => {
