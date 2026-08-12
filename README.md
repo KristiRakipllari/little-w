@@ -9,7 +9,7 @@ A calm, structured storytelling app for children with autism. Built with a monor
 | Component | Technology |
 |-----------|-----------|
 | **Mobile App** | React Native 0.81 + Expo SDK 54 |
-| **Admin Web** | Next.js App Router + shadcn/ui (stub) |
+| **Admin Web** | Next.js App Router + Tailwind v4 + shadcn/ui |
 | **UI (mobile)** | Tamagui + custom components |
 | **State** | Zustand + AsyncStorage |
 | **Backend API** | Next.js API Routes |
@@ -27,17 +27,16 @@ calm-stories/
 ├── apps/
 │   ├── api/                  # Next.js backend API
 │   │   └── src/app/api/      # REST endpoints
-│   ├── admin/                # Next.js admin web panel (stub)
+│   ├── admin/                # Next.js admin web panel (stories/pages CRUD)
 │   └── mobile/               # React Native + Expo app
 │       └── src/
 │           ├── screens/
 │           │   ├── child/    # Splash, AgeGate, Privacy, StoryList,
 │           │   │             # StoryPlayer, Paywall, ParentGate, Settings, Policy
-│           │   ├── admin/    # Dashboard, StoryForm, PageEditor
-│           │   └── auth/     # Login
+│           │   └── parent/   # Login, ForgotPassword
 │           ├── components/   # Btn, Card, CheckRow, ScreenHeader, Toggle, Segment
-│           ├── store/        # Zustand stores (appStore, authStore, storyStore)
-│           ├── services/     # API client
+│           ├── store/        # Zustand stores (appStore, parentStore, storyStore)
+│           ├── services/     # API client (client, parent, stories, purchases)
 │           ├── navigation/   # React Navigation setup
 │           └── theme/        # Tamagui config
 ├── packages/
@@ -117,7 +116,7 @@ npm run dev:api
 # Terminal 2 - Mobile app (Expo dev server)
 npm run dev:mobile
 
-# Terminal 3 - Admin web panel (http://localhost:3001) (stub)
+# Terminal 3 - Admin web panel (http://localhost:3001)
 npm run dev:admin
 ```
 
@@ -165,10 +164,11 @@ npm run db:seed
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Run API + Mobile together |
+| `npm run dev` | Run API + Mobile + Admin together |
 | `npm run dev:api` | Run backend only (port 3000) |
 | `npm run dev:mobile` | Run Expo mobile only |
 | `npm run dev:admin` | Run admin web panel (port 3001) |
+| `npm run storage:config` | Sync the Supabase bucket's MIME/size limits with the API |
 | `npm run db:migrate` | Run database migrations |
 | `npm run db:seed` | Seed demo data (re-runnable) |
 | `npm run setup` | Full setup (install + docker + migrate + seed) |
@@ -181,16 +181,23 @@ npm run db:seed
 
 ---
 
-## Default Admin Login
+## Admin Panel (web)
 
-After running `npm run db:seed`:
+Content management (stories, pages, uploads) lives in `apps/admin` — a standalone Next.js web app. The mobile app has no admin surface.
+
+```bash
+npm run dev:admin
+# → http://localhost:3001/login
+```
+
+Log in with the seeded admin account (after `npm run db:seed`):
 
 ```
 Email:    admin@littleworld.app
 Password: admin123
 ```
 
-You can access the admin login from the mobile app via **Settings > Admin Panel** (below the version number).
+The admin app needs its own env file — copy `apps/admin/.env.local.example` to `apps/admin/.env.local` and point `NEXT_PUBLIC_API_URL` at the API. In production, deploy it as its own site (e.g. Vercel) with `NEXT_PUBLIC_API_URL` set to the deployed API. See `apps/admin/README.md` for details.
 
 ---
 
@@ -204,19 +211,21 @@ You can access the admin login from the mobile app via **Settings > Admin Panel*
 | **Age Gate** | Child under 13 / 13+ selection (COPPA) |
 | **Privacy** | Privacy promises + agree to continue |
 | **Story List** | Stories grouped by difficulty (beginner/medium/advanced) with SectionList |
-| **Story Player** | Page-by-page reading with gradient art, audio button, dot pagination |
+| **Story Player** | Page-by-page reading with gradient art, narration playback in the reader's language, dot pagination |
 | **Paywall** | Premium story upsell ($2.99/month) |
 | **Parent Gate** | Email verification for grown-up consent |
 | **Settings** | Theme picker (4 themes), audio, text size, animations, about links |
 | **Privacy Policy** | Full policy text |
 
-### Admin Mode (after login)
+### Admin (web, `apps/admin`)
 
-| Screen | Description |
-|--------|-------------|
+Admin now lives on the web, not in the mobile app:
+
+| Page | Description |
+|------|-------------|
 | **Dashboard** | Story list with CRUD, publish/unpublish |
-| **Story Form** | Create or edit story details |
-| **Page Editor** | Add, edit, delete, and reorder pages |
+| **Story Form** | Create or edit story details, cover upload |
+| **Page Editor** | Add, edit, delete, and drag-reorder pages; image upload |
 
 ---
 
@@ -266,7 +275,10 @@ Stories are categorized into 3 levels with distinct visual styling:
 - `PUT /api/stories/:id/pages/reorder` - Reorder pages (auth required)
 
 ### Upload
-- `POST /api/upload` - Upload image/audio (auth required)
+- `POST /api/upload` - Upload image (PNG/JPEG/WebP, max 5MB) or audio (MP3/M4A, max 20MB) (auth required)
+- `DELETE /api/upload` - Delete an uploaded file by public URL (auth required)
+
+Files go to Supabase Storage at `stories/{storyId}/{type}_{timestamp}.{ext}`. The bucket has its own MIME allowlist and size cap — `npm run storage:config` syncs it with the limits above and is safe to re-run.
 
 ---
 

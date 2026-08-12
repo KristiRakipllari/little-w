@@ -14,7 +14,7 @@ import ScreenHeader from "@/components/ScreenHeader";
 import Card from "@/components/Card";
 import Btn from "@/components/Btn";
 import { useAppStore } from "@/store/appStore";
-import { useAuthStore } from "@/store/authStore";
+import { useParentStore } from "@/store/parentStore";
 import {
   restorePurchases,
   presentCustomerCenter,
@@ -148,7 +148,7 @@ export default function ParentDashboardScreen({
     }
   };
 
-  const refreshSubscription = useAuthStore((s) => s.refreshSubscription);
+  const refreshSubscription = useParentStore((s) => s.refreshSubscription);
 
   const handleRestore = async () => {
     const result = await restorePurchases();

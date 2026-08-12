@@ -6,6 +6,7 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
+    "storage:config": "tsx scripts/configure-storage.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
     "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.2",
     "next": "^14.2.0",
+    "nodemailer": "^6.9.14",
     "pg": "^8.12.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
@@ -23,8 +25,10 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.11.0",
+    "@types/nodemailer": "^6.4.15",
     "@types/pg": "^8.11.6",
     "@types/react": "^18.2.0",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }
 }

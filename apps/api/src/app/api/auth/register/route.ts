@@ -1,11 +1,22 @@
 import { NextRequest } from "next/server";
 import { queryOne } from "@calm-stories/db";
 import { hashPassword, signToken, requireAdmin } from "@/app/lib/auth";
+import { rateLimit } from "@/app/lib/rateLimit";
 import { created, error, unauthorized, serverError } from "@/app/lib/response";
 import type { User, UserRole, RegisterRequest } from "@calm-stories/shared";
 
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
 export async function POST(req: NextRequest) {
   try {
+    // Throttle sign-ups per IP: blunts spam-account creation and the email
+    // enumeration the 409 "already registered" response would otherwise allow.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(`register:${ip}`, MAX_ATTEMPTS, WINDOW_MS)) {
+      return error("Too many attempts. Please try again later.", 429);
+    }
+
     const body: RegisterRequest = await req.json();
 
     if (!body.email || !body.password) {

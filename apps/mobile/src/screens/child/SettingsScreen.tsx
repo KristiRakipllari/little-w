@@ -5,7 +5,7 @@ import Card from "@/components/Card";
 import Toggle from "@/components/Toggle";
 import Segment from "@/components/Segment";
 import { useAppStore, Locale } from "@/store/appStore";
-import { useAuthStore } from "@/store/authStore";
+import { useParentStore } from "@/store/parentStore";
 import { useTranslation } from "@/i18n";
 import { THEMES, getThemeById } from "@calm-stories/shared";
 import type { AppTheme } from "@calm-stories/shared";
@@ -104,12 +104,11 @@ function LanguageDropdown({
 interface Props {
   onPolicy: () => void;
   onTerms: () => void;
-  onAdmin: () => void;
   onParentArea: () => void;
   onLogin: () => void;
 }
 
-export default function SettingsScreen({ onPolicy, onTerms, onAdmin, onParentArea, onLogin }: Props) {
+export default function SettingsScreen({ onPolicy, onTerms, onParentArea, onLogin }: Props) {
   const {
     locale,
     setLocale,
@@ -122,7 +121,7 @@ export default function SettingsScreen({ onPolicy, onTerms, onAdmin, onParentAre
     motion,
     setMotion,
   } = useAppStore();
-  const { user, logout } = useAuthStore();
+  const { user, logout } = useParentStore();
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
 
@@ -369,18 +368,6 @@ export default function SettingsScreen({ onPolicy, onTerms, onAdmin, onParentAre
         <Text style={[styles.version, { color: theme.textLight }]}>
           {t("settings.version")}
         </Text>
-
-        <TouchableOpacity
-          onPress={onAdmin}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={t("settings.adminPanel")}
-          style={styles.adminLink}
-        >
-          <Text style={[styles.adminText, { color: theme.textLight }]}>
-            {t("settings.adminPanel")}
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -499,16 +486,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     paddingVertical: 8,
-  },
-  adminLink: {
-    alignSelf: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  adminText: {
-    fontSize: 12,
-    fontWeight: "600",
-    textDecorationLine: "underline",
   },
 });

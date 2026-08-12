@@ -19,7 +19,7 @@ import Animated, {
 import Svg, { Rect, Path } from "react-native-svg";
 import Card from "@/components/Card";
 import { useAppStore } from "@/store/appStore";
-import { useAuthStore } from "@/store/authStore";
+import { useParentStore } from "@/store/parentStore";
 import { useTranslation } from "@/i18n";
 import { useStoryStore } from "@/store/storyStore";
 import { useFavoritesStore } from "@/store/favoritesStore";
@@ -60,7 +60,7 @@ export default function StoryList({ onStory, onPaywall }: Props) {
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
   const { stories, isLoading, fetchStories } = useStoryStore();
-  const { user, isSubscribed } = useAuthStore();
+  const { user, isSubscribed } = useParentStore();
   const favoriteIds = useFavoritesStore((s) => s.favoriteIds);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
 

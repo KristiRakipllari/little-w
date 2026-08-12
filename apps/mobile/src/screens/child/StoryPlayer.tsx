@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import Svg, { Path } from "react-native-svg";
 import ScreenHeader from "@/components/ScreenHeader";
 import Btn from "@/components/Btn";
@@ -78,6 +79,7 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
   const addReadingTime = useReadingStatsStore((s) => s.addReadingTime);
   const openRecorded = useRef(false);
   const finishRecorded = useRef(false);
+  const resumeResolved = useRef(false);
 
   // One "open" per visit, once the story has actually loaded
   useEffect(() => {
@@ -108,12 +110,21 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
     }
   }, [pageIdx, currentStory, storyId]);
 
-  // Clamp the resumed page in case the story now has fewer pages than saved.
-  useEffect(() => {
-    if (currentStory && pageIdx > currentStory.pages.length - 1) {
-      setPageIdx(Math.max(0, currentStory.pages.length - 1));
+  // Resolve the resume position once, when the story first loads. If the
+  // reader finished last time (the saved page is the final page or beyond),
+  // start over at page 1 instead of reopening on the last page — otherwise the
+  // optimistic resume from useState stands (mid-story pickup). Also clamps if
+  // the story shrank since last read. Runs during render before the first
+  // content paint, so the correct page shows with no flash.
+  if (currentStory && !resumeResolved.current) {
+    resumeResolved.current = true;
+    const total = currentStory.pages.length;
+    if (lastReadStoryId === storyId && lastReadPage >= total) {
+      if (pageIdx !== 0) setPageIdx(0);
+    } else if (pageIdx > total - 1) {
+      setPageIdx(Math.max(0, total - 1));
     }
-  }, [currentStory]);
+  }
 
   // Record the most recently opened story and page so the home screen can resume it.
   useEffect(() => {
@@ -121,6 +132,61 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
       setLastRead(storyId, pageIdx + 1);
     }
   }, [storyId, pageIdx, currentStory]);
+
+  // ── Narration ──
+  // Resolved before the loading/complete early-returns below, because hooks
+  // must run on every render. A page with no track for the reader's language
+  // simply shows no play button — we never substitute the other language,
+  // which would narrate in a language the child may not understand.
+  const activePage = currentStory?.pages[pageIdx];
+  const trackUri =
+    (locale === "sq" ? activePage?.audio_path_sq : activePage?.audio_path_en) || null;
+
+  // Changing the source swaps in a fresh player and releases the previous
+  // one, so turning the page never keeps the old narration alive.
+  const player = useAudioPlayer(trackUri);
+  const status = useAudioPlayerStatus(player);
+  const hasNarration = audio && !!trackUri;
+
+  // Narration must not outlive the page it belongs to: stop it when the story
+  // ends or the grown-up turns audio off in Settings.
+  useEffect(() => {
+    if ((showComplete || !audio) && status.playing) {
+      player.pause();
+    }
+  }, [showComplete, audio, status.playing, player]);
+
+  // Leaving the screen mid-sentence should be silent immediately, rather than
+  // waiting for the player to be released.
+  useEffect(() => {
+    return () => {
+      try {
+        player.pause();
+      } catch {
+        // Already released — there is nothing left to stop.
+      }
+    };
+  }, [player]);
+
+  const toggleNarration = async () => {
+    if (status.playing) {
+      player.pause();
+      return;
+    }
+    // After a track finishes the position sits at the end, where play() would
+    // be a no-op. Rewind first so the button always restarts the page.
+    const atEnd =
+      status.didJustFinish ||
+      (status.duration > 0 && status.currentTime >= status.duration - 0.05);
+    if (atEnd) {
+      try {
+        await player.seekTo(0);
+      } catch {
+        // A failed seek still leaves play() worth attempting.
+      }
+    }
+    player.play();
+  };
 
   if (isLoading || !currentStory) {
     return (
@@ -201,9 +267,9 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
 
         <View style={styles.spacer} />
 
-        {/* Audio + dots row (dots centered on their own when audio is off) */}
-        <View style={[styles.audioRow, !audio && styles.audioRowCentered]}>
-          {audio && (
+        {/* Audio + dots row (dots centered on their own when there's no narration) */}
+        <View style={[styles.audioRow, !hasNarration && styles.audioRowCentered]}>
+          {hasNarration && (
             <>
               <TouchableOpacity
                 style={[
@@ -212,14 +278,27 @@ export default function StoryPlayer({ storyId, onBack }: Props) {
                   { backgroundColor: theme.primaryDeep, shadowColor: theme.primaryShade },
                 ]}
                 activeOpacity={0.85}
-                accessibilityLabel={t("storyPlayer.readAloud")}
+                onPress={toggleNarration}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  status.playing ? t("storyPlayer.pause") : t("storyPlayer.readAloud")
+                }
+                accessibilityState={{ busy: !status.isLoaded }}
               >
-                <Svg width={20} height={20} viewBox="0 0 20 20">
-                  <Path d="M5 3v14l12-7L5 3z" fill={theme.onPrimary} />
-                </Svg>
+                {!status.isLoaded ? (
+                  <ActivityIndicator size="small" color={theme.onPrimary} />
+                ) : status.playing ? (
+                  <Svg width={20} height={20} viewBox="0 0 20 20">
+                    <Path d="M6 3.5h3v13H6zM11 3.5h3v13h-3z" fill={theme.onPrimary} />
+                  </Svg>
+                ) : (
+                  <Svg width={20} height={20} viewBox="0 0 20 20">
+                    <Path d="M5 3v14l12-7L5 3z" fill={theme.onPrimary} />
+                  </Svg>
+                )}
               </TouchableOpacity>
               <Text style={[styles.audioLabel, { color: theme.textDark }]}>
-                {t("storyPlayer.readAloud")}
+                {status.playing ? t("storyPlayer.pause") : t("storyPlayer.readAloud")}
               </Text>
             </>
           )}

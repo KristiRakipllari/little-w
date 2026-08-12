@@ -3,17 +3,25 @@ import { requireAdmin } from "@/app/lib/auth";
 import { uploadFile, deleteFile } from "@/app/lib/storage";
 import { success, error, unauthorized, forbidden, serverError } from "@/app/lib/response";
 
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const AUDIO_TYPES = ["audio/mpeg", "audio/mp4"];
+const ALLOWED_TYPES = [...IMAGE_TYPES, ...AUDIO_TYPES];
+
+// Narration runs minutes long, so audio gets a larger budget than artwork.
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_AUDIO_SIZE = 20 * 1024 * 1024; // 20MB
 
 const EXT_TO_MIME: Record<string, string> = {
   png: "image/png",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   webp: "image/webp",
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  aac: "audio/mp4",
 };
 
-// POST /api/upload — upload image to Supabase Storage (admin only)
+// POST /api/upload — upload image or audio to Supabase Storage (admin only)
 export async function POST(req: NextRequest) {
   try {
     try {
@@ -59,8 +67,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (fileSize > MAX_SIZE) {
-      return error("File too large. Maximum size is 5MB");
+    const isAudio = AUDIO_TYPES.includes(contentType);
+    const maxSize = isAudio ? MAX_AUDIO_SIZE : MAX_IMAGE_SIZE;
+    if (fileSize > maxSize) {
+      return error(
+        `File too large. Maximum size is ${maxSize / (1024 * 1024)}MB for ${
+          isAudio ? "audio" : "images"
+        }`
+      );
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());

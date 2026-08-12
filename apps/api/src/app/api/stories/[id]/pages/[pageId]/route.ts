@@ -118,7 +118,11 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
     // Best-effort storage cleanup — the DB row is gone either way, and a
     // failed file delete must not fail the request.
-    const orphans = [existing.image_url].filter((u): u is string => !!u);
+    const orphans = [
+      existing.image_url,
+      existing.audio_path_sq,
+      existing.audio_path_en,
+    ].filter((u): u is string => !!u);
     await Promise.allSettled(orphans.map((u) => deleteFile(u)));
 
     return success({ deleted: true });

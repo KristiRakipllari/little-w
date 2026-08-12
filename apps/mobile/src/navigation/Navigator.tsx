@@ -9,7 +9,7 @@ import Svg, { Path, Circle } from "react-native-svg";
 import { TouchableOpacity, Text } from "react-native";
 
 import { useAppStore, hasValidConsent } from "@/store/appStore";
-import { useAuthStore } from "@/store/authStore";
+import { useParentStore } from "@/store/parentStore";
 import { useTranslation } from "@/i18n";
 import { getThemeById } from "@calm-stories/shared";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -31,14 +31,9 @@ import SettingsScreen from "@/screens/child/SettingsScreen";
 import GrownupGateScreen from "@/screens/child/GrownupGateScreen";
 import ParentDashboardScreen from "@/screens/child/ParentDashboardScreen";
 
-// Auth screens
-import Login from "@/screens/auth/Login";
-import ForgotPassword from "@/screens/auth/ForgotPassword";
-
-// Admin screens
-import Dashboard from "@/screens/admin/Dashboard";
-import StoryForm from "@/screens/admin/StoryForm";
-import PageEditor from "@/screens/admin/PageEditor";
+// Parent screens
+import Login from "@/screens/parent/Login";
+import ForgotPassword from "@/screens/parent/ForgotPassword";
 
 // ── Types ────────────────────────────────────
 export type RootStackParamList = {
@@ -49,20 +44,13 @@ export type RootStackParamList = {
   MoodCheckIn: { storyId: string };
   StoryPlayer: { storyId: string };
   Paywall: { storyId: string };
-  // The gate protects more than one destination; `next` says where a pass
-  // leads (default: ParentDashboard). "Login" = admin login.
-  GrownupGate: { next?: "ParentDashboard" | "Login" } | undefined;
+  GrownupGate: undefined;
   ParentDashboard: undefined;
   Policy: undefined;
   Terms: undefined;
-  // Auth
+  // Parent auth
   LoginRegister: { storyId?: string };
   ForgotPassword: undefined;
-  // Admin
-  Login: undefined;
-  AdminTabs: undefined;
-  StoryForm: { storyId?: string };
-  PageEditor: { storyId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -209,13 +197,6 @@ function ChildMainScreen({ navigation }: Screen<"ChildMain">) {
     navigation.navigate("Terms");
   }, [navigation]);
 
-  const handleAdmin = useCallback(() => {
-    // Staff login is adult-only content: it must sit behind the grownup
-    // gate, same as the parent area (accessibility-autism: no ungated
-    // exits from child mode).
-    navigation.navigate("GrownupGate", { next: "Login" });
-  }, [navigation]);
-
   const handleParentArea = useCallback(() => {
     navigation.navigate("GrownupGate");
   }, [navigation]);
@@ -229,7 +210,6 @@ function ChildMainScreen({ navigation }: Screen<"ChildMain">) {
           <SettingsScreen
             onPolicy={handlePolicy}
             onTerms={handleTerms}
-            onAdmin={handleAdmin}
             onParentArea={handleParentArea}
             onLogin={handleSettingsLogin}
           />
@@ -295,27 +275,12 @@ function OnboardingScreen() {
 // ── Root Navigator ───────────────────────────
 export default function Navigator() {
   const consentData = useAppStore((s) => s.consentData);
-  const { user, mode } = useAuthStore();
 
   return (
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {mode === "admin" && user ? (
-            <>
-              <Stack.Screen name="AdminTabs" component={Dashboard} />
-              <Stack.Screen
-                name="StoryForm"
-                component={StoryForm}
-                options={{ headerShown: true, title: "Story" }}
-              />
-              <Stack.Screen
-                name="PageEditor"
-                component={PageEditor}
-                options={{ headerShown: true, title: "Edit Pages" }}
-              />
-            </>
-          ) : !hasValidConsent(consentData) ? (
+          {!hasValidConsent(consentData) ? (
             <>
               <Stack.Screen name="Onboarding" component={OnboardingScreen} />
               <Stack.Screen
@@ -371,11 +336,6 @@ export default function Navigator() {
                 name="ForgotPassword"
                 component={ForgotPasswordWrapper}
                 options={{ presentation: "modal" }}
-              />
-              <Stack.Screen
-                name="Login"
-                component={AdminLoginWrapper}
-                options={{ headerShown: true, title: "Admin Login" }}
               />
             </>
           )}
@@ -437,20 +397,19 @@ function TermsWrapper({ navigation }: Screen<"Terms">) {
   return <TermsScreen onBack={() => navigation.goBack()} />;
 }
 
-function GrownupGateWrapper({ route, navigation }: Screen<"GrownupGate">) {
-  const next = route.params?.next ?? "ParentDashboard";
+function GrownupGateWrapper({ navigation }: Screen<"GrownupGate">) {
   return (
     <GrownupGateScreen
       onBack={() => navigation.goBack()}
       onPass={() => {
-        navigation.replace(next);
+        navigation.replace("ParentDashboard");
       }}
     />
   );
 }
 
 function ParentDashboardWrapper({ navigation }: Screen<"ParentDashboard">) {
-  const { isSubscribed } = useAuthStore();
+  const { isSubscribed } = useParentStore();
   return (
     <ParentDashboardScreen
       subscribed={isSubscribed}
@@ -469,13 +428,21 @@ function LoginRegisterWrapper({ route, navigation }: Screen<"LoginRegister">) {
       onBack={() => navigation.goBack()}
       onSuccess={() => {
         if (storyId) {
-          // Coming from a premium story tap
-          const { isSubscribed } = useAuthStore.getState();
-          if (isSubscribed) {
-            navigation.replace("MoodCheckIn", { storyId });
-          } else {
-            navigation.replace("Paywall", { storyId });
-          }
+          // Coming from a premium story tap (always entered via the Paywall's
+          // "Log in", so a Paywall sits underneath this Login). Rebuild the
+          // stack from ChildMain instead of replace() — replace() only swaps
+          // the Login screen, stranding the Paywall so a later "Back to
+          // stories" would land on it instead of the story list.
+          const { isSubscribed } = useParentStore.getState();
+          navigation.reset({
+            index: 1,
+            routes: [
+              { name: "ChildMain" },
+              isSubscribed
+                ? { name: "MoodCheckIn", params: { storyId } }
+                : { name: "Paywall", params: { storyId } },
+            ],
+          });
         } else {
           // Coming from Settings login — go back to Settings
           navigation.goBack();
@@ -488,26 +455,6 @@ function LoginRegisterWrapper({ route, navigation }: Screen<"LoginRegister">) {
 
 function ForgotPasswordWrapper({ navigation }: Screen<"ForgotPassword">) {
   return <ForgotPassword onBack={() => navigation.goBack()} />;
-}
-
-function AdminLoginWrapper({ navigation }: Screen<"Login">) {
-  const { setMode } = useAuthStore();
-  return (
-    <Login
-      onBack={() => navigation.goBack()}
-      onSuccess={() => {
-        // Only staff accounts may enter admin mode; a parent logging in
-        // here just ends up signed in and returns to the child app.
-        const { user } = useAuthStore.getState();
-        if (user && (user.role === "admin" || user.role === "editor")) {
-          setMode("admin");
-        } else {
-          navigation.goBack();
-        }
-      }}
-      onForgotPassword={() => navigation.navigate("ForgotPassword")}
-    />
-  );
 }
 
 // ── Styles ───────────────────────────────────

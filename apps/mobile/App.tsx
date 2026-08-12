@@ -6,16 +6,17 @@ import config from "@/theme/config";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Navigator from "@/navigation/Navigator";
 import { useAppStore } from "@/store/appStore";
-import { useAuthStore, attachPurchasesSync } from "@/store/authStore";
+import { useParentStore, attachPurchasesSync } from "@/store/parentStore";
 import { useReadingStatsStore } from "@/store/readingStatsStore";
 import { useMoodStore } from "@/store/moodStore";
 import { configurePurchases } from "@/services/purchases";
+import { configureAudio } from "@/services/audio";
 import { getThemeById } from "@calm-stories/shared";
 
 function AppContent() {
   const { hydrated, hydrate, themeId } = useAppStore();
-  const authHydrated = useAuthStore((s) => s.hydrated);
-  const loadSession = useAuthStore((s) => s.loadSession);
+  const authHydrated = useParentStore((s) => s.hydrated);
+  const loadSession = useParentStore((s) => s.loadSession);
   const hydrateStats = useReadingStatsStore((s) => s.hydrate);
   const hydrateMoods = useMoodStore((s) => s.hydrate);
   const theme = getThemeById(themeId);
@@ -25,6 +26,7 @@ function AppContent() {
     // purchases identity and refreshes the entitlement.
     configurePurchases();
     attachPurchasesSync();
+    configureAudio();
     hydrate();
     loadSession();
     hydrateStats();

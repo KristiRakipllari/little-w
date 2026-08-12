@@ -21,9 +21,8 @@ if (!__DEV__ && !ENV_API_URL) {
 export const CONFIG = {
   API_URL: ENV_API_URL || (__DEV__ ? LOCAL_API : ""),
   STORAGE_KEYS: {
-    AUTH_TOKEN: "calm_auth_token",
-    USER_DATA: "calm_user_data",
-    APP_MODE: "calm_app_mode",
+    AUTH_TOKEN: "lw_parent_token",
+    USER_DATA: "lw_parent_user",
   },
   REVENUECAT: {
     // Test Store key — swap for the platform keys (appl_… / goog_…) before

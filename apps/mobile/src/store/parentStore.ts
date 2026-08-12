@@ -1,16 +1,14 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CONFIG } from "@/config";
-import * as api from "@/services/api";
+import * as parent from "@/services/parent";
+import { setUnauthorizedHandler } from "@/services/client";
 import * as purchases from "@/services/purchases";
 import type { User, LoginRequest } from "@calm-stories/shared";
 
-type AppMode = "child" | "admin";
-
-interface AuthState {
+interface ParentState {
   user: User | null;
   token: string | null;
-  mode: AppMode;
   isLoading: boolean;
   error: string | null;
   isSubscribed: boolean;
@@ -25,17 +23,14 @@ interface AuthState {
   logout: () => Promise<void>;
   loadSession: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
-  setMode: (mode: AppMode) => void;
   markTrialUsed: () => void;
   clearError: () => void;
 }
 
 const STORAGE_KEYS = {
   ...CONFIG.STORAGE_KEYS,
-  PARENT_TOKEN: "calm_parent_token",
-  PARENT_EMAIL: "calm_parent_email",
-  IS_SUBSCRIBED: "calm_is_subscribed",
-  TRIAL_USED: "calm_trial_used",
+  IS_SUBSCRIBED: "lw_parent_subscribed",
+  TRIAL_USED: "lw_parent_trial_used",
 };
 
 // Minimal base64 decoder — Hermes has no atob().
@@ -79,10 +74,9 @@ function isTokenExpired(token: string): boolean {
   }
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useParentStore = create<ParentState>((set, get) => ({
   user: null,
   token: null,
-  mode: "child",
   isLoading: false,
   error: null,
   isSubscribed: false,
@@ -92,14 +86,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (credentials) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await api.login(credentials);
+      const result = await parent.login(credentials);
       await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, result.access_token);
       await AsyncStorage.setItem(
         STORAGE_KEYS.USER_DATA,
         JSON.stringify(result.user)
       );
-      await AsyncStorage.setItem(STORAGE_KEYS.PARENT_TOKEN, result.access_token);
-      await AsyncStorage.setItem(STORAGE_KEYS.PARENT_EMAIL, result.user.email);
 
       // Log in instantly with the entitlement the server already knows;
       // attaching the RevenueCat identity is a network call, so it runs in
@@ -116,13 +108,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const trialUsed = result.user.trial_used === true;
       await AsyncStorage.setItem(STORAGE_KEYS.TRIAL_USED, String(trialUsed));
 
-      const isAdmin = result.user.role === "admin" || result.user.role === "editor";
       set({
         user: result.user,
         token: result.access_token,
         isSubscribed: subscribed,
         trialUsed,
-        mode: isAdmin && get().mode === "admin" ? "admin" : get().mode,
         isLoading: false,
       });
     } catch (err: any) {
@@ -133,14 +123,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (credentials) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await api.register(credentials);
+      const result = await parent.register(credentials);
       await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, result.access_token);
       await AsyncStorage.setItem(
         STORAGE_KEYS.USER_DATA,
         JSON.stringify(result.user)
       );
-      await AsyncStorage.setItem(STORAGE_KEYS.PARENT_TOKEN, result.access_token);
-      await AsyncStorage.setItem(STORAGE_KEYS.PARENT_EMAIL, result.user.email);
 
       // Same non-blocking pattern as login(): brand-new accounts are never
       // premium, so there's nothing to wait for.
@@ -170,20 +158,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await AsyncStorage.multiRemove([
       STORAGE_KEYS.AUTH_TOKEN,
       STORAGE_KEYS.USER_DATA,
-      STORAGE_KEYS.PARENT_TOKEN,
-      STORAGE_KEYS.PARENT_EMAIL,
       STORAGE_KEYS.IS_SUBSCRIBED,
     ]);
     // Detach the RevenueCat identity too (back to an anonymous customer).
     await purchases.logOutPurchases();
-    set({ user: null, token: null, mode: "child", error: null, isSubscribed: false });
+    set({ user: null, token: null, error: null, isSubscribed: false });
   },
 
   loadSession: async () => {
     try {
       const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
       const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-      const savedMode = await AsyncStorage.getItem(STORAGE_KEYS.APP_MODE);
       const subscribed = await AsyncStorage.getItem(STORAGE_KEYS.IS_SUBSCRIBED);
       const trialUsed =
         (await AsyncStorage.getItem(STORAGE_KEYS.TRIAL_USED)) === "true";
@@ -201,7 +186,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({
           token,
           user,
-          mode: (savedMode as AppMode) || "child",
           // Cached value for instant UI; refreshed from RevenueCat below.
           isSubscribed: subscribed === "true" || hasServerEntitlement(user),
           trialUsed,
@@ -231,11 +215,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isSubscribed: subscribed });
   },
 
-  setMode: (mode) => {
-    AsyncStorage.setItem(STORAGE_KEYS.APP_MODE, mode);
-    set({ mode });
-  },
-
   markTrialUsed: () => {
     AsyncStorage.setItem(STORAGE_KEYS.TRIAL_USED, "true");
     set({ trialUsed: true });
@@ -247,8 +226,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 // A 401 from an authenticated endpoint means the stored token is expired or
 // invalid — the free week is over. Consume the trial and clear the session
 // so the UI doesn't keep a ghost login around.
-api.setUnauthorizedHandler(() => {
-  const { markTrialUsed, logout } = useAuthStore.getState();
+setUnauthorizedHandler(() => {
+  const { markTrialUsed, logout } = useParentStore.getState();
   markTrialUsed();
   logout();
 });
@@ -263,10 +242,10 @@ export function attachPurchasesSync(): void {
   purchases.addCustomerInfoListener((info) => {
     const subscribed =
       purchases.hasPremium(info) ||
-      hasServerEntitlement(useAuthStore.getState().user);
+      hasServerEntitlement(useParentStore.getState().user);
     AsyncStorage.setItem(STORAGE_KEYS.IS_SUBSCRIBED, String(subscribed)).catch(
       () => {}
     );
-    useAuthStore.setState({ isSubscribed: subscribed });
+    useParentStore.setState({ isSubscribed: subscribed });
   });
 }

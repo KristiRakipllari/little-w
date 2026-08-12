@@ -1,6 +1,6 @@
 # Architecture Review — Little World
 
-**Reviewed:** 2026-07-16 · **Fix Batch 1 applied:** 2026-07-17 · **Fix Batch 2 (approved subset) applied:** 2026-07-17 · **Scope:** `apps/mobile`, `apps/api`, `packages/db` (admin web app excluded by request).
+**Reviewed:** 2026-07-16 · **Fix Batch 1 applied:** 2026-07-17 · **Fix Batch 2 (approved subset) applied:** 2026-07-17 · **Verification re-review passed:** 2026-07-17 · **Scope:** `apps/mobile`, `apps/api`, `packages/db` (admin web app excluded by request).
 
 **Status legend:** ✅ Fixed (unmarked = Batch 1; Batch 2 fixes say so) · ⚠️ Open · ⏸ Deferred (needs product decision) · ❌ Dropped by user decision. Findings without a marker in the LOW lists are ⚠️ Open.
 
@@ -9,8 +9,10 @@
 | Status | Findings |
 |---|---|
 | ✅ Fixed — 35 | C1–C4 · H1, H2, H4, H6 · M1, M3, M4, M6–M9 · A1–A5, A9, A11–A19 · L1, L2, L5, L7, L8 |
+| ✅ Fixed — post-review (navigation & UX) | **N1** stranded Paywall after premium login · **N2** finished story reopening on the last page (see Post-review fixes section) |
 | ⚠️ Open — your tasks | **H5** RevenueCat webhook secret · **L6** platform keys before store submission · **G1** `git init` |
-| ⚠️ Open — code, small | L4 purchases logger · L9 port default · L10 Windows-safe setup script · L11+L12 bundle into the next schema migration (006) |
+| ⚠️ Open — code, small | L4 purchases logger · L9 port default · L10 Windows-safe setup script · L11+L12 bundle into the next schema migration (006) · **R1** ErrorBoundary exit route · **R2** StoryPlayer error state · R3–R5 (see re-review) |
+| ⚠️ Open — rate limiting | **RL1** upload cap · **RL2** public-GET limiter · **RL3** shared-store/WAF for production (see Rate limiting section) |
 | ⏸ Deferred | M2 re-render refactor · M5 test setup · A10 textLight design pass |
 | Accepted as-is | L3 StatusBar · L13 pagination · A20 heart-button visible size · A21 spinners |
 | ❌ Dropped | H3/A8 read-aloud · A6/A7 48dp hit areas |
@@ -258,19 +260,17 @@ Applied: both decisions, all Stability & correctness, all Calm & accessibility, 
 9. **A14** — replace off-theme hex (`#7A4F1A`, `#FBEAE8`/`#C0392B`) with theme tokens
 10. **A16 + A19** — explicit `accessibilityLabel` on StoryPlayer "Previous", `Toggle`, `Segment`
 
-### Performance
-11. **M2** — selector subscriptions (`useStore(s => s.x)`) in StoryList/Navigator/Settings; `React.memo` on `StoryRow`/`FeaturedCard`; `useCallback` renderers
-
 ### Hygiene
-12. **A17** — delete dead `PrivacyScreen.tsx` + `CheckRow.tsx` (one has a broken no-`onPress` button)
-13. **L2** — delete `pnpm-workspace.yaml`
-14. **L7** — remove upload route's debug `console.log` of FormData
-15. **L4** — tiny leveled logger for `services/purchases.ts` (silent when not `__DEV__`)
-16. **L9** — align `connection.ts` default port with docker-compose (5433)
-17. **L10** — make the root `setup` script Windows-safe (replace `sleep 3` with a node wait or the docker healthcheck)
+11. **A17** — delete dead `PrivacyScreen.tsx` + `CheckRow.tsx` (one has a broken no-`onPress` button)
+12. **L2** — delete `pnpm-workspace.yaml`
+13. **L7** — remove upload route's debug `console.log` of FormData
 
-### Tests (M5 — first safety net)
-18. `jest-expo` + `@testing-library/react-native`; first five targets, all pure functions: `hasValidConsent`/`CONSENT_VERSION`, `isTokenExpired` (locks in the L5 fix), `computeDashboard` (locks in L1), StoryList paywall gating, `computeMoodSummary`
+### NOT applied (excluded from this batch by user decision — still open/deferred)
+- **M2** — selector subscriptions + `React.memo` rows + `useCallback` renderers (StoryList/Navigator/Settings)
+- **M5** — jest-expo + RNTL test setup (five pure-function targets)
+- **L4** — leveled logger for `services/purchases.ts`
+- **L9** — align `connection.ts` default port with docker-compose (5433)
+- **L10** — Windows-safe root `setup` script
 
 ### Your tasks (only you can do these)
 - **H5** — set `REVENUECAT_WEBHOOK_SECRET` in `.env` and the RevenueCat dashboard — until then, server-side entitlements never sync
@@ -281,3 +281,59 @@ Applied: both decisions, all Stability & correctness, all Calm & accessibility, 
 - **A10** (darken `textLight`) — changes the look of all 3 themes everywhere; deserves its own design pass with before/after screens
 - **L11/L12** — bundle into the next real schema migration (006) rather than a migration for their own sake
 - **L3, L13, A20, A21** — accepted as-is / no action needed
+
+---
+
+## Verification re-review — 2026-07-17 (after both batches)
+
+Full verification pass: preflight suite inline, API/DB fixes re-verified inline, mobile app re-swept by the `react-native-architect` agent instructed to be skeptical of the fixes themselves.
+
+### Verdict: ✅ everything holds
+
+- **All 16 mobile fix areas verified in code** with file:line evidence — config, ErrorBoundary, Navigator typing/gating/consent flow, Btn/Segment/Toggle colors and labels, StoryPlayer textSize/motion, StoryList motion gating, StoryComplete bounded animations, GrownupGate, sanitizeSaved, fail-closed tokens, streak cap, register payload, i18n, app.json, deletions, dependency pins.
+- **All 8 API/DB fixes verified on disk** with correct semantics (rate-limit clear only after successful auth; storage cleanup best-effort after cascade).
+- **Preflight:** typecheck ✅×3 · i18n 214/214 · single expo 54.0.36 + worklets 0.5.1 · migrations 5/5 applied in DB · expo-doctor 17/18 (known intentional metro config) · all 7 load-bearing contrast pairs recomputed, 4.87–10.98:1, every one passes AA.
+- Notably verified: a production build with no `EXPO_PUBLIC_API_URL` degrades to the calm empty-list state, not a crash.
+
+### New findings from the re-review
+
+- **R1 (Low).** The ErrorBoundary fallback offers only "Try again" — for a *deterministic* render crash inside the StoryPlayer boundary (which replaces the whole subtree, header included), retry → re-throw → fallback, with no visible in-app way back to the story list (OS back gestures still work). **Fix idea:** `onExit` prop on the boundary wired to `navigation.goBack()`.
+- **R2 (Low, pre-existing).** `StoryPlayer.tsx:125-131` shows an **infinite spinner** when `fetchStory` fails (store sets `error`, leaves `currentStory` null, `isLoading` false — no error/empty branch in the player). Reachable offline with a cached list. The list degrades calmly; the player doesn't.
+- **R3 (note).** With H3/A8 dropped, the read-aloud button is now a *labeled* discoverable dead control (56dp target + `accessibilityLabel`, `audio` defaults ON, still no `onPress`). If it stays unimplemented, hiding it is kinder than labeling it.
+- **R4 (docs).** `config/index.ts:13-14` comment claims the missing-env case reaches the ErrorBoundary; actually `console.error` doesn't throw — real behavior is the calm empty list. Comment-only.
+- **R5 (cosmetic).** `expo-image-picker` pinned exact `17.0.11` instead of `~17.0.11`.
+- Also corrected in this pass: this report's Batch 2 section previously still listed the excluded items (M2, M5, L4, L9, L10) inside the applied list — now split out explicitly.
+
+---
+
+## Rate limiting — coverage & TODO (2026-07-17)
+
+Password reset + auth rate-limiting shipped. Recording the remaining gaps as tracked TODOs rather than building them now — the auth surface (the real brute-force target) is fully covered, and the biggest remaining lever is the limiter's architecture, not more per-route limits.
+
+### Covered today
+All via the in-memory `rateLimit()` helper (`apps/api/src/app/lib/rateLimit.ts`):
+- `POST /api/auth/login` — 5 / 15 min per email+IP (cleared on success)
+- `POST /api/auth/register` — 5 / 15 min per IP
+- `POST /api/auth/forgot-password` — 3 / 15 min per email+IP
+- `POST /api/auth/reset-password` — 5 / 15 min per email+IP, plus a 5-wrong-guess cap that burns the code
+
+### Open TODOs
+- **RL1 (Low–Med) — Upload cap.** `POST /api/upload` has no limit. It's admin-gated, but writes 5 MB files to Supabase Storage (real cost/quota) — a leaked admin token or a buggy client loop could rack it up. Add a per-user cap (~30 / 5 min) reusing `rateLimit()`, keyed `upload:${user.id}`.
+- **RL2 (Low) — Public GET burst limiter.** `GET /api/stories`, `/api/stories/[id]`, and pages GET are unauthenticated and scrapable. Content is non-sensitive (published stories) and the app caches heavily, so the only risk is DoS/bandwidth. Optional light per-IP limit — but weak on serverless without RL3.
+- **RL3 (Med — the important one) — Shared-store / edge limiter for production.** `rateLimit()` is in-memory and per-process; on Vercel serverless each instance has its own counter, so today's limits blunt single-instance bursts but not distributed attacks. Production fix: move to a shared store (**Upstash Redis** — standard Vercel pairing) or a platform **WAF / edge rate limit** (Vercel or Cloudflare). Highest leverage: it makes every existing auth limit actually hold at scale.
+
+### Deliberately NOT rate-limited
+- **RevenueCat webhook** — secret-gated already, and RevenueCat retries on any non-2xx, so a limiter would drop legitimate subscription events.
+- **Story/page writes** (POST/PUT/DELETE) — gated by `requireStaff`/`requireAdmin`; the auth check rejects unauthenticated abuse before any work happens.
+
+---
+
+## Post-review fixes — navigation & reading UX (2026-08-11)
+
+Bugs found by the user in real use after the review, both fixed. Navigation-stack / reading-flow issues, not in the original findings.
+
+### N1 — ✅ Fixed · "Back to stories" landed on the Paywall after premium login
+`apps/mobile/src/navigation/Navigator.tsx` (`LoginRegisterWrapper.onSuccess`). Premium tap while logged-out built the stack `[ChildMain, Paywall, LoginRegister]`; login success used `navigation.replace("MoodCheckIn")`, which swaps only the top screen and **left the Paywall stranded underneath** (`[ChildMain, Paywall, StoryPlayer]`). Finishing the story → "Back to stories" (`goBack()`) then surfaced that Paywall instead of the story list — the user was still logged in; purely a stack bug. **Fix:** on login success from a premium tap, `navigation.reset` rebuilds a clean stack rooted at `ChildMain` (→ `MoodCheckIn` if subscribed, else `Paywall`) instead of `replace`. Also removes a latent double-Paywall in the not-subscribed branch. Settings-login path unchanged.
+
+### N2 — ✅ Fixed · Finished stories reopened on the last page
+`apps/mobile/src/screens/child/StoryPlayer.tsx`. Resume used only `lastReadPage`, saved on every page turn, with no concept of "finished" — so tapping through to the final page (6/6) saved page 6, and reopening resumed there. **Fix:** a once-per-mount resume resolver (runs during render, before first paint — no flash) treats *saved page ≥ last page* as finished → start at page 1; a lower saved page still resumes mid-story (e.g. 5/6 → page 5). The home "Continue" card is unaffected and still shows full progress for a finished story (accurate), since the saved page isn't rewritten on finish.

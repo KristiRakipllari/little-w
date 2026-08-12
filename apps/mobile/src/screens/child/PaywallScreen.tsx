@@ -6,7 +6,7 @@ import GrownupGateScreen from "@/screens/child/GrownupGateScreen";
 import Btn from "@/components/Btn";
 import Card from "@/components/Card";
 import { useAppStore } from "@/store/appStore";
-import { useAuthStore } from "@/store/authStore";
+import { useParentStore } from "@/store/parentStore";
 import { useTranslation } from "@/i18n";
 import { getThemeById, SUBSCRIPTION_PRICE } from "@calm-stories/shared";
 import {
@@ -26,7 +26,7 @@ export default function PaywallScreen({ onPurchased, onLogin, onClose }: Props) 
   const themeId = useAppStore((s) => s.themeId);
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
-  const { user, trialUsed, refreshSubscription } = useAuthStore();
+  const { user, trialUsed, refreshSubscription } = useParentStore();
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   // The paywall is reachable from child mode, and our terms promise that

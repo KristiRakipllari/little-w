@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import ScreenHeader from "@/components/ScreenHeader";
-import { useAuthStore } from "@/store/authStore";
+import { useParentStore } from "@/store/parentStore";
 import { useAppStore } from "@/store/appStore";
 import { useTranslation } from "@/i18n";
 import { getThemeById } from "@calm-stories/shared";
@@ -27,7 +27,7 @@ export default function Login({ onBack, onSuccess, onForgotPassword }: Props) {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, register, isLoading, error, clearError } = useAuthStore();
+  const { login, register, isLoading, error, clearError } = useParentStore();
   const themeId = useAppStore((s) => s.themeId);
   const theme = getThemeById(themeId);
   const { t } = useTranslation();
@@ -41,7 +41,7 @@ export default function Login({ onBack, onSuccess, onForgotPassword }: Props) {
       await register({ email: email.trim(), password });
     }
     // If login/register succeeded (no error thrown, user is set)
-    const { user } = useAuthStore.getState();
+    const { user } = useParentStore.getState();
     if (user) {
       onSuccess();
     }
